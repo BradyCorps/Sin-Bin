@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SIN BIN — deployment prototype</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@300;500;700&family=IBM+Plex+Mono:wght@400;600&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ice:#0A121C; --board:#131F2C; --panel:#182635; --hair:#26394D;
+  --frost:#8FA9C0; --chalk:#EDF4F9;
+  --penalty:#E8394B; --cold:#3FC1E0; --burn:#F2A03D; --sour:#B565E8;
+  --ok:#4FD18B;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--ice);color:var(--chalk);font-family:Inter,system-ui,sans-serif;
+  font-size:14px;line-height:1.5;padding:16px;min-height:100vh}
+.wrap{max-width:1180px;margin:0 auto}
+
+/* ---- header ---- */
+header{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;
+  flex-wrap:wrap;border-bottom:2px solid var(--penalty);padding-bottom:12px;margin-bottom:20px}
+h1{font-family:Oswald,sans-serif;font-weight:700;font-size:38px;letter-spacing:.14em;
+  line-height:1;text-transform:uppercase}
+h1 span{color:var(--penalty)}
+.tag{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.22em;
+  color:var(--frost);text-transform:uppercase;margin-top:6px}
+.track{display:flex;gap:22px;font-family:'IBM Plex Mono',monospace}
+.track div{text-align:right}
+.track .k{font-size:9px;letter-spacing:.18em;color:var(--frost);text-transform:uppercase}
+.track .v{font-family:Oswald,sans-serif;font-size:26px;font-weight:500;line-height:1.1}
+.strikes{letter-spacing:3px;color:var(--penalty);font-size:20px}
+
+/* ---- layout ---- */
+.grid{display:grid;grid-template-columns:1fr 320px;gap:18px;align-items:start}
+@media(max-width:900px){.grid{grid-template-columns:1fr}}
+
+.card{background:var(--board);border:1px solid var(--hair);border-radius:3px;padding:14px}
+.card h2{font-family:Oswald,sans-serif;font-weight:500;font-size:13px;letter-spacing:.2em;
+  text-transform:uppercase;color:var(--frost);margin-bottom:10px;
+  display:flex;justify-content:space-between;align-items:baseline}
+.card h2 em{font-style:normal;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--hair)}
+
+/* ---- unit rows ---- */
+.unit{display:flex;align-items:stretch;gap:8px;margin-bottom:7px}
+.unit-label{width:62px;flex:none;display:flex;flex-direction:column;justify-content:center;
+  font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--frost);
+  border-left:2px solid var(--hair);padding-left:7px}
+.unit-label b{font-family:Oswald,sans-serif;font-size:16px;font-weight:500;color:var(--chalk);
+  letter-spacing:.06em}
+.unit-label i{font-style:normal;font-size:9px;letter-spacing:.1em}
+.slots{display:flex;gap:6px;flex:1;flex-wrap:wrap}
+.chem{width:52px;flex:none;display:flex;flex-direction:column;justify-content:center;
+  align-items:flex-end;font-family:'IBM Plex Mono',monospace;font-size:11px}
+.chem b{font-size:14px;font-weight:600}
+.chem i{font-style:normal;font-size:8px;letter-spacing:.1em;color:var(--frost)}
+
+/* ---- player rectangle ---- */
+.p{flex:1;min-width:104px;background:var(--panel);border:1px solid var(--hair);
+  border-radius:2px;padding:7px 8px 6px;cursor:pointer;position:relative;
+  transition:border-color .12s,transform .08s}
+.p:hover{border-color:var(--cold)}
+.p:active{transform:scale(.985)}
+.p.sel{border-color:var(--cold);box-shadow:0 0 0 1px var(--cold)}
+.p.empty{opacity:.35;cursor:default;display:flex;align-items:center;justify-content:center;
+  font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--frost)}
+.p.empty:hover{border-color:var(--hair)}
+.p-top{display:flex;justify-content:space-between;align-items:baseline;gap:6px}
+.p-name{font-family:Oswald,sans-serif;font-size:14px;font-weight:500;letter-spacing:.07em;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.p-rtg{font-family:'IBM Plex Mono',monospace;font-size:14px;font-weight:600}
+.p-meta{display:flex;justify-content:space-between;font-family:'IBM Plex Mono',monospace;
+  font-size:8.5px;letter-spacing:.08em;color:var(--frost);margin-top:1px}
+.p-role{color:var(--cold)}
+.p-role.unhappy{color:var(--penalty)}
+.bars{display:flex;flex-direction:column;gap:2px;margin-top:5px}
+.bar{height:3px;background:#0d1722;border-radius:1px;overflow:hidden}
+.bar i{display:block;height:100%;border-radius:1px;transition:width .3s}
+.bar.f i{background:var(--burn)} .bar.d i{background:var(--sour)}
+
+/* ---- bench ---- */
+.bench-list{display:flex;flex-direction:column;gap:6px}
+.bench-list .p{min-width:0}
+
+/* ---- readout ---- */
+.readout{font-family:'IBM Plex Mono',monospace;font-size:11px}
+.readout .row{display:flex;justify-content:space-between;padding:4px 0;
+  border-bottom:1px dotted var(--hair)}
+.readout .row:last-child{border:none}
+.readout .row b{font-weight:600}
+.big{font-family:Oswald,sans-serif;font-size:40px;font-weight:700;line-height:1;
+  letter-spacing:.03em;margin:8px 0 2px}
+
+/* ---- buttons ---- */
+button{font-family:Oswald,sans-serif;font-size:14px;font-weight:500;letter-spacing:.16em;
+  text-transform:uppercase;background:var(--penalty);color:#fff;border:none;
+  padding:13px 18px;border-radius:2px;cursor:pointer;width:100%;transition:filter .15s}
+button:hover{filter:brightness(1.15)}
+button:disabled{background:var(--hair);color:var(--frost);cursor:not-allowed}
+button.ghost{background:transparent;border:1px solid var(--hair);color:var(--chalk)}
+button.ghost:hover{border-color:var(--cold)}
+
+/* ---- modal ---- */
+.veil{position:fixed;inset:0;background:rgba(5,9,14,.9);display:flex;align-items:center;
+  justify-content:center;padding:20px;z-index:50}
+.veil.hide{display:none}
+.modal{background:var(--board);border:1px solid var(--hair);border-top:3px solid var(--penalty);
+  border-radius:3px;padding:24px;max-width:640px;width:100%;max-height:92vh;overflow:auto}
+.modal h3{font-family:Oswald,sans-serif;font-size:26px;font-weight:700;letter-spacing:.1em;
+  text-transform:uppercase;margin-bottom:4px}
+.modal p{color:var(--frost);font-size:13px;margin-bottom:16px}
+.opts{display:flex;flex-direction:column;gap:8px;margin-bottom:14px}
+.opt{background:var(--panel);border:1px solid var(--hair);border-radius:2px;padding:12px 14px;
+  cursor:pointer;transition:border-color .12s}
+.opt:hover{border-color:var(--cold)}
+.opt b{font-family:Oswald,sans-serif;font-size:15px;letter-spacing:.1em;text-transform:uppercase;
+  display:block;margin-bottom:2px}
+.opt span{font-size:12px;color:var(--frost)}
+.scoreline{display:flex;justify-content:space-around;align-items:center;
+  font-family:Oswald,sans-serif;margin:14px 0;padding:14px 0;
+  border-top:1px solid var(--hair);border-bottom:1px solid var(--hair)}
+.scoreline div{text-align:center}
+.scoreline .n{font-size:44px;font-weight:700;line-height:1}
+.scoreline .l{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.18em;
+  color:var(--frost);text-transform:uppercase}
+.note{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--burn);
+  border-left:2px solid var(--burn);padding-left:10px;margin-bottom:12px}
+.legend{font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--frost);
+  display:flex;gap:14px;flex-wrap:wrap;margin-top:12px;letter-spacing:.06em}
+.legend s{text-decoration:none;display:inline-block;width:16px;height:3px;
+  vertical-align:middle;margin-right:5px;border-radius:1px}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <div>
+    <h1>Sin<span>·</span>Bin</h1>
+    <div class="tag">deployment prototype — no art, just the loop</div>
+  </div>
+  <div class="track">
+    <div><div class="k">Round</div><div class="v" id="tRound">1</div></div>
+    <div><div class="k">Game</div><div class="v" id="tGame">1<span style="font-size:15px;color:var(--frost)">/10</span></div></div>
+    <div><div class="k">Record</div><div class="v" id="tRec">0–0</div></div>
+    <div><div class="k">Strikes left</div><div class="v strikes" id="tStrikes">▮▮▮</div></div>
+  </div>
+</header>
+
+<div class="grid">
+  <div>
+    <div class="card" style="margin-bottom:14px">
+      <h2>Forward lines <em>click two players to swap</em></h2>
+      <div id="lines"></div>
+    </div>
+    <div class="card">
+      <h2>Defence pairs</h2>
+      <div id="pairs"></div>
+    </div>
+    <div class="legend">
+      <span><s style="background:var(--burn)"></s>Fatigue — recovers slowly</span>
+      <span><s style="background:var(--sour)"></s>Discontent — permanent</span>
+      <span><s style="background:var(--cold)"></s>Chemistry — decays when split up</span>
+    </div>
+  </div>
+
+  <div>
+    <div class="card" style="margin-bottom:14px">
+      <h2>Crease</h2>
+      <div id="goalies" class="bench-list"></div>
+    </div>
+    <div class="card" style="margin-bottom:14px">
+      <h2>Press box <em>scratched</em></h2>
+      <div id="bench" class="bench-list"></div>
+    </div>
+    <div class="card" style="margin-bottom:14px">
+      <h2>Projection</h2>
+      <div class="readout">
+        <div class="row"><span>Forwards</span><b id="rF">—</b></div>
+        <div class="row"><span>Defence</span><b id="rD">—</b></div>
+        <div class="row"><span>Goalie relief</span><b id="rG">—</b></div>
+        <div class="row"><span>Opponent</span><b id="rO">—</b></div>
+      </div>
+      <div class="big" id="rTotal">—</div>
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.14em;
+        color:var(--frost);text-transform:uppercase" id="rVerdict"></div>
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;line-height:1.5;
+        color:var(--cold);margin-top:10px;padding-top:10px;border-top:1px dotted var(--hair);
+        display:none" id="rMove"></div>
+    </div>
+    <button id="play">Drop the puck</button>
+  </div>
+</div>
+</div>
+
+<div class="veil hide" id="veil"><div class="modal" id="modal"></div></div>
+
+<script>
+/* ============ CONSTANTS ============ */
+const F_WEIGHT=[1.00,0.82,0.62,0.42], D_WEIGHT=[1.00,0.80,0.58];
+const FATIGUE_RATE=15, RECOVER=3, EGO_RATE=2.8, SCRATCH_GAP=4;
+const TRAITS=['SNIPER','PLAYMAKER','GRINDER','WALL','ROVER','ANCHOR'];
+const SYNERGY={'PLAYMAKER|SNIPER':.07,'GRINDER|GRINDER':.05,'ROVER|WALL':.06,
+  'ANCHOR|ROVER':.05,'SNIPER|SNIPER':-.05,'PLAYMAKER|PLAYMAKER':-.04,'ANCHOR|ANCHOR':-.03};
+const F_ROLE=['1ST LINE','TOP SIX','MIDDLE SIX','DEPTH'];
+const D_ROLE=['TOP PAIR','2ND PAIR','DEPTH'];
+const NAMES=['VESPER','KESTREL','ONYX','SABLE','CINDER','HALCYON','MARROW','TALLOW','VELVET',
+'ASHEN','QUILL','LUMEN','TIDE','HOLLOW','GLASS','SPARROW','WINTER','EMBER','SLATE','VERGE',
+'ORACLE','PALE','RUST','THORN','VAULT','WICK','ZEPHYR','BRINE','COIL','DUSK','FLINT','GALE',
+'HUSK','IRIS','JUNIPER','KILN','LACQUER','MOTH','NETTLE','OSPREY'];
+
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;var t=Math.imul(a^a>>>15,1|a);
+  t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+let rng=mulberry32(Date.now()&0xffffffff);
+
+function syn(a,b){return SYNERGY[[a,b].sort().join('|')]||0}
+function roleOf(r,isD){if(isD)return r>=85?0:r>=77?1:2;return r>=86?0:r>=80?1:r>=73?2:3}
+function eff(p){return p.rating*(1-p.fatigue/100*.45)*(1-p.discontent/100*.55)}
+
+/* ============ STATE ============ */
+let S;
+function newPlayer(rating,isD,idx){
+  return {id:(isD?'D':'F')+idx+'-'+Math.floor(rng()*9999),
+    name:NAMES[Math.floor(rng()*NAMES.length)], rating, isD,
+    role:roleOf(rating,isD), ego:.6+(rating-62)/30*.9,
+    fatigue:0, discontent:0, trait:TRAITS[Math.floor(rng()*TRAITS.length)]};
+}
+function newGame(){
+  const fwd=[],def=[];
+  for(let i=0;i<13;i++) fwd.push(newPlayer(Math.round(64+rng()*24),false,i));
+  for(let i=0;i<7;i++)  def.push(newPlayer(Math.round(64+rng()*22),true,i));
+  fwd.sort((a,b)=>b.rating-a.rating); def.sort((a,b)=>b.rating-a.rating);
+  S={ lines:[fwd.slice(0,3),fwd.slice(3,6),fwd.slice(6,9),fwd.slice(9,12)],
+      pairs:[def.slice(0,2),def.slice(2,4),def.slice(4,6)],
+      bench:[fwd[12],def[6]],
+      goalies:[newPlayer(Math.round(74+rng()*12),false,90),newPlayer(Math.round(66+rng()*8),false,91)],
+      reps:{}, game:0, wins:0, losses:0, sel:null, over:false };
+  S.goalies.forEach(g=>{g.name=NAMES[Math.floor(rng()*NAMES.length)];g.isG=true});
+  render();
+}
+
+/* ============ MECHANICS ============ */
+function unitChem(u,isD){
+  if(u.some(p=>!p))return 0;
+  let repMin=Infinity,tSum=0,n=0;
+  for(let i=0;i<u.length;i++)for(let j=i+1;j<u.length;j++){
+    repMin=Math.min(repMin,S.reps[[u[i].id,u[j].id].sort().join('-')]||0);
+    tSum+=syn(u[i].trait,u[j].trait); n++;
+  }
+  let poison=0; u.forEach(p=>{if(p.discontent>40)poison+=(p.discontent-40)/100*.9});
+  return Math.max(.35, 1 + Math.min(repMin,6)/6*.18 + tSum/n*(isD?1:1.4) - poison);
+}
+function relief(){
+  const g=S.goalies[0]; if(!g)return 0;
+  return Math.max(0,(g.rating-68)/100)*(1-g.fatigue/100*.5);
+}
+function score(){
+  let f=0,d=0;
+  S.lines.forEach((l,i)=>{if(!l.some(p=>!p))
+    f+=l.reduce((s,p)=>s+eff(p),0)*unitChem(l,false)*F_WEIGHT[i]});
+  S.pairs.forEach((p,i)=>{if(!p.some(x=>!x))
+    d+=p.reduce((s,x)=>s+eff(x),0)*unitChem(p,true)*D_WEIGHT[i]*1.55});
+  return {f,d,total:f+d};
+}
+function isBoss(i){return i===9}
+function oppScore(i){return Math.round(1020+i*34+(isBoss(i)?90:0))}
+
+/* ============ RENDER ============ */
+function pEl(p,where,idx){
+  if(!p) return `<div class="p empty">EMPTY</div>`;
+  const sel = S.sel && S.sel.p.id===p.id ? ' sel':'';
+  const roleList = p.isD?D_ROLE:F_ROLE;
+  const unhappy = idx!==undefined && idx>p.role;
+  return `<div class="p${sel}" data-where="${where}" data-id="${p.id}">
+    <div class="p-top"><span class="p-name">${p.name}</span><span class="p-rtg">${Math.round(eff(p))}</span></div>
+    <div class="p-meta"><span class="p-role${unhappy?' unhappy':''}">${roleList[p.role]}</span><span>${p.trait}</span></div>
+    <div class="bars">
+      <div class="bar f"><i style="width:${p.fatigue}%"></i></div>
+      <div class="bar d"><i style="width:${p.discontent}%"></i></div>
+    </div></div>`;
+}
+function unitEl(u,i,isD){
+  const c=unitChem(u,isD), col=c>=1.08?'var(--ok)':c>=.95?'var(--cold)':'var(--penalty)';
+  const lbl=isD?['D1','D2','D3'][i]:['L1','L2','L3','L4'][i];
+  const w=Math.round((isD?D_WEIGHT[i]:F_WEIGHT[i])*100);
+  return `<div class="unit">
+    <div class="unit-label"><b>${lbl}</b><i>${w}% TOI</i></div>
+    <div class="slots">${u.map(p=>pEl(p,(isD?'pairs':'lines')+':'+i,i)).join('')}</div>
+    <div class="chem"><b style="color:${col}">${c.toFixed(2)}</b><i>CHEM</i></div></div>`;
+}
+function render(){
+  document.getElementById('lines').innerHTML=S.lines.map((l,i)=>unitEl(l,i,false)).join('');
+  document.getElementById('pairs').innerHTML=S.pairs.map((p,i)=>unitEl(p,i,true)).join('');
+  document.getElementById('bench').innerHTML=S.bench.length
+    ? S.bench.map(p=>pEl(p,'bench',SCRATCH_GAP)).join('')
+    : '<div style="font-family:monospace;font-size:11px;color:var(--frost)">Nobody scratched.</div>';
+  document.getElementById('goalies').innerHTML=S.goalies.map((g,i)=>`
+    <div class="p" style="cursor:${i?'pointer':'default'}" data-where="goalie" data-id="${g.id}">
+      <div class="p-top"><span class="p-name">${g.name}</span><span class="p-rtg">${g.rating}</span></div>
+      <div class="p-meta"><span class="p-role">${i?'BACKUP':'STARTER'}</span><span>${i?'RESTING':'-'+Math.round(relief()*100)+'% FATIGUE'}</span></div>
+      <div class="bars"><div class="bar f"><i style="width:${g.fatigue}%"></i></div></div></div>`).join('');
+
+  const s=score(), o=oppScore(S.game);
+  document.getElementById('rF').textContent=Math.round(s.f);
+  document.getElementById('rD').textContent=Math.round(s.d);
+  document.getElementById('rG').textContent='-'+Math.round(relief()*100)+'%';
+  document.getElementById('rO').textContent=o;
+  document.getElementById('rTotal').textContent=Math.round(s.total);
+  const diff=s.total-o, v=document.getElementById('rVerdict');
+  v.textContent = diff>90?'Comfortable':diff>0?'Narrow edge':diff>-90?'Underdog':'Outmatched';
+  v.style.color = diff>0?'var(--ok)':diff>-90?'var(--burn)':'var(--penalty)';
+
+  document.getElementById('tRound').textContent=Math.min(3,Math.floor(S.game/3)+1);
+  document.getElementById('tGame').innerHTML=(S.game+1)+'<span style="font-size:15px;color:var(--frost)">/10</span>';
+  document.getElementById('tRec').textContent=S.wins+'–'+S.losses;
+  document.getElementById('tStrikes').textContent='▮'.repeat(Math.max(0,3-S.losses))||'—';
+  document.getElementById('play').textContent=isBoss(S.game)?'Play the final':'Drop the puck';
+  const mv=document.getElementById('rMove');
+  if(S.lastMove){mv.style.display='block';mv.textContent=S.lastMove}else{mv.style.display='none'}
+  bind();
+}
+function bind(){
+  document.querySelectorAll('.p[data-id]').forEach(el=>{
+    el.onclick=()=>{
+      if(el.dataset.where==='goalie'){
+        const i=S.goalies.findIndex(g=>g.id===el.dataset.id);
+        if(i>0){[S.goalies[0],S.goalies[i]]=[S.goalies[i],S.goalies[0]];render()}
+        return;
+      }
+      const found=locate(el.dataset.id); if(!found)return;
+      if(!S.sel){S.sel=found;render();return}
+      if(S.sel.p.id===found.p.id){S.sel=null;render();return}
+      swap(S.sel,found); S.sel=null; render();
+    };
+  });
+}
+function locate(id){
+  for(let i=0;i<S.lines.length;i++){const j=S.lines[i].findIndex(p=>p&&p.id===id);
+    if(j>=0)return{p:S.lines[i][j],arr:S.lines[i],idx:j}}
+  for(let i=0;i<S.pairs.length;i++){const j=S.pairs[i].findIndex(p=>p&&p.id===id);
+    if(j>=0)return{p:S.pairs[i][j],arr:S.pairs[i],idx:j}}
+  const b=S.bench.findIndex(p=>p&&p.id===id);
+  if(b>=0)return{p:S.bench[b],arr:S.bench,idx:b};
+  return null;
+}
+function swap(a,b){
+  if(a.p.isD!==b.p.isD){flash('Forwards and defencemen can\'t swap slots.');return}
+  const t=a.arr[a.idx]; a.arr[a.idx]=b.arr[b.idx]; b.arr[b.idx]=t;
+}
+function flash(msg){
+  const v=document.getElementById('rVerdict');
+  const old=v.textContent; v.textContent=msg; v.style.color='var(--penalty)';
+  setTimeout(()=>render(),1400);
+}
+
+/* ============ GAME RESOLUTION ============ */
+document.getElementById('play').onclick=()=>{
+  if(S.over)return;
+  const idx=S.game, boss=isBoss(idx);
+  const s=score(); let mine=s.total*(0.97+rng()*0.06);
+  let opp=oppScore(idx)*(0.97+rng()*0.06);
+  opp*=(1-relief()*0.55);
+  let bossNote='';
+  if(boss){ const arch=pickArchetype(s);
+    bossNote=arch.text; mine*=arch.mult; }
+  const won=mine>opp;
+  won?S.wins++:S.losses++;
+
+  // fatigue, discontent, chemistry
+  const rel=relief();
+  const apply=(u,i,w)=>u.forEach(p=>{
+    p.fatigue=Math.max(0,Math.min(100,p.fatigue+w[i]*FATIGUE_RATE*(1-rel)-RECOVER));
+    const gap=i-p.role; if(gap>0)p.discontent=Math.min(100,p.discontent+gap*EGO_RATE*p.ego);
+  });
+  S.lines.forEach((l,i)=>apply(l,i,F_WEIGHT));
+  S.pairs.forEach((p,i)=>apply(p,i,D_WEIGHT));
+  S.bench.forEach(p=>{ p.fatigue=Math.max(0,p.fatigue-8);
+    const gap=SCRATCH_GAP-p.role; if(gap>0)p.discontent=Math.min(100,p.discontent+gap*EGO_RATE*p.ego*0.7); });
+  S.goalies[0].fatigue=Math.min(100,S.goalies[0].fatigue+13);
+  S.goalies[1].fatigue=Math.max(0,S.goalies[1].fatigue-9);
+
+  const played=new Set();
+  [...S.lines,...S.pairs].forEach(u=>{for(let i=0;i<u.length;i++)for(let j=i+1;j<u.length;j++){
+    const k=[u[i].id,u[j].id].sort().join('-'); S.reps[k]=(S.reps[k]||0)+1; played.add(k)}});
+  Object.keys(S.reps).forEach(k=>{if(!played.has(k))S.reps[k]=Math.max(0,S.reps[k]-1)});
+
+  S.game++;
+  showResult(won,Math.round(mine),Math.round(opp),boss,bossNote);
+};
+
+function pickArchetype(s){
+  if(s.f/(s.d||1) > 2.6) return {mult:.86, text:'SHUTDOWN CORPS — they read your forward-heavy build and smothered it. −14% offence.'};
+  const worst=[...S.lines[3]].filter(Boolean);
+  const l4=worst.reduce((a,p)=>a+p.rating,0)/Math.max(1,worst.length);
+  if(l4<70) return {mult:.88, text:'DEPTH GRINDERS — they rolled four lines at your soft bottom six. −12%.'};
+  const all=[...S.lines.flat(),...S.pairs.flat()].filter(Boolean);
+  const star=all.reduce((a,p)=>p.rating>a.rating?p:a);
+  if(star.rating>=87) return {mult:.90, text:`STAR HUNTERS — they shadowed ${star.name} all night. −10%.`};
+  return {mult:.94, text:'FORECHECK PRESSURE — relentless, but nothing specific to exploit. −6%.'};
+}
+
+function showResult(won,mine,opp,boss,note){
+  const veil=document.getElementById('veil'), m=document.getElementById('modal');
+  const dead=S.losses>=3, done=S.game>=10;
+  let head = boss ? (won?'Champions':'Fell in the final') : (won?'Win':'Loss');
+  if(dead) head='Run over';
+  else if(done&&won) head='Champions';
+
+  m.innerHTML=`<h3>${head}</h3>
+    <p>${boss?'The final.':'Game '+S.game+' of 10.'}</p>
+    ${note?`<div class="note">${note}</div>`:''}
+    <div class="scoreline">
+      <div><div class="n" style="color:${won?'var(--ok)':'var(--penalty)'}">${mine}</div><div class="l">Sin Bin</div></div>
+      <div><div class="n" style="color:var(--frost)">${opp}</div><div class="l">Opponent</div></div>
+    </div>
+    ${dead||done?`<button onclick="newGame();document.getElementById('veil').classList.add('hide')">New run</button>`
+      :`<p style="margin-bottom:10px">Choose one before the next game.</p>
+        <div class="opts" id="opts"></div>`}`;
+  veil.classList.remove('hide');
+  if(!dead&&!done){ S.over=false; buildOptions(); } else { S.over=true; }
+  render();
+}
+
+function buildOptions(){
+  const pool=[
+    {t:'Scout',d:'Sign a free agent. Watch where he expects to play.',f:()=>{
+      const isD=rng()<.3, p=newPlayer(Math.round(74+rng()*16),isD,99);
+      S.bench.push(p); return `Signed ${p.name} (${p.rating}, expects ${(isD?D_ROLE:F_ROLE)[p.role]}). He's in the press box — find him a spot.`}},
+    {t:'Train',d:'+6 rating to your lowest-rated skater.',f:()=>{
+      const all=[...S.lines.flat(),...S.pairs.flat()].filter(Boolean);
+      const p=all.reduce((a,x)=>x.rating<a.rating?x:a);
+      p.rating+=6; p.role=roleOf(p.rating,p.isD);
+      return `${p.name} is up to ${p.rating}. His expectation is now ${(p.isD?D_ROLE:F_ROLE)[p.role]}.`}},
+    {t:'Rest',d:'−30 fatigue for everyone. Chemistry unaffected.',f:()=>{
+      [...S.lines.flat(),...S.pairs.flat(),...S.bench].filter(Boolean)
+        .forEach(p=>p.fatigue=Math.max(0,p.fatigue-30));
+      S.goalies[0].fatigue=Math.max(0,S.goalies[0].fatigue-25);
+      return 'Legs back under the group.'}},
+    {t:'Trade',d:'Ship out your most discontented skater for a clean 78.',f:()=>{
+      const all=[...S.lines,...S.pairs,S.bench];
+      let worst=null,loc=null;
+      all.forEach(arr=>arr.forEach((p,i)=>{if(p&&(!worst||p.discontent>worst.discontent)){worst=p;loc={arr,i}}}));
+      if(!worst)return 'Nobody to move.';
+      const repl=newPlayer(78,worst.isD,98); loc.arr[loc.i]=repl;
+      return `${worst.name} (${Math.round(worst.discontent)} discontent) shipped out for ${repl.name}, 78, expects ${(repl.isD?D_ROLE:F_ROLE)[repl.role]}.`}},
+  ];
+  const picks=pool.sort(()=>rng()-.5).slice(0,3);
+  document.getElementById('opts').innerHTML=picks.map((o,i)=>
+    `<div class="opt" data-i="${i}"><b>${o.t}</b><span>${o.d}</span></div>`).join('');
+  document.querySelectorAll('.opt').forEach(el=>{
+    el.onclick=()=>{
+      S.lastMove=picks[+el.dataset.i].f();
+      document.getElementById('veil').classList.add('hide');
+      render();
+    };
+  });
+}
+
+newGame();
+</script>
+</body>
+</html>
