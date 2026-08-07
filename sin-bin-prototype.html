@@ -101,6 +101,19 @@ h1 span{color:var(--penalty)}
   letter-spacing:.03em;margin:8px 0 2px}
 .warn{font-family:'IBM Plex Mono',monospace;font-size:10.5px;line-height:1.5;color:var(--burn);
   margin-top:10px;padding-top:10px;border-top:1px dotted var(--hair);display:none}
+.rh-name{font-family:Oswald,sans-serif;font-size:21px;font-weight:700;letter-spacing:.06em;
+  text-transform:uppercase;line-height:1;margin:2px 0 5px}
+.rh-traits{font-family:'IBM Plex Mono',monospace;font-size:10px;line-height:1.55;color:var(--frost);margin-bottom:11px}
+.lanes{display:flex;flex-direction:column;gap:5px}
+.lane{display:flex;align-items:center;justify-content:space-between;gap:6px;
+  font-family:'IBM Plex Mono',monospace;font-size:10.5px}
+.lane-k{color:var(--frost);letter-spacing:.1em;min-width:78px}
+.lane-k i{font-style:normal;color:var(--burn);margin-left:3px}
+.lane-vs{flex:1;text-align:center;color:var(--chalk)}
+.lane-vs s{text-decoration:none;color:var(--frost);font-size:9px;margin:0 4px}
+.lane-chip{min-width:64px;text-align:right;font-weight:600;letter-spacing:.05em}
+.lanes.res{margin:14px 0}
+.lanes.res .lane{font-size:12px;padding:5px 0;border-bottom:1px dotted var(--hair)}
 
 /* ---- buttons ---- */
 button{font-family:Oswald,sans-serif;font-size:14px;font-weight:500;letter-spacing:.16em;
@@ -172,6 +185,7 @@ button.ghost:hover{border-color:var(--cold)}
       <span><s style="background:var(--sour)"></s>Discontent — shorted vs role minutes; eases when respected</span>
       <span><s style="background:var(--cold)"></s>Chemistry — builds with reps, decays when split up</span>
       <span>Click two players to swap · use ± to set each line's minutes</span>
+      <span><s style="background:var(--chalk)"></s>Lanes — L1·L2 = STRIKE, L3·L4 = DEPTH, pairs+crease = GUARD</span>
     </div>
   </div>
 
@@ -185,17 +199,15 @@ button.ghost:hover{border-color:var(--cold)}
       <div id="bench" class="bench-list"></div>
     </div>
     <div class="card" style="margin-bottom:14px">
-      <h2>Projection</h2>
-      <div class="readout">
-        <div class="row"><span>Forwards</span><b id="rF">—</b></div>
-        <div class="row"><span>Defence</span><b id="rD">—</b></div>
-        <div class="row"><span>Goalie relief</span><b id="rG">—</b></div>
-        <div class="row"><span>Shorted egos</span><b id="rShort">0</b></div>
-        <div class="row"><span>Opponent</span><b id="rO">—</b></div>
-      </div>
-      <div class="big" id="rTotal">—</div>
+      <h2>Rival House <em id="rhTag"></em></h2>
+      <div class="rh-name" id="rhName">—</div>
+      <div class="rh-traits" id="rhTraits"></div>
+      <div class="lanes" id="rhLanes"></div>
       <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.14em;
-        color:var(--frost);text-transform:uppercase" id="rVerdict"></div>
+        color:var(--frost);text-transform:uppercase;margin-top:12px" id="rVerdict"></div>
+      <div class="readout" style="margin-top:10px">
+        <div class="row"><span>Shorted egos</span><b id="rShort">0</b></div>
+      </div>
       <div class="warn" id="rWarn"></div>
       <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;line-height:1.5;
         color:var(--cold);margin-top:10px;padding-top:10px;border-top:1px dotted var(--hair);
@@ -218,6 +230,21 @@ const FREF=22, DREF=24;
 const FMIN_TOTAL=60, DMIN_TOTAL=60, FLINE_CAP=30, DPAIR_CAP=34, MSTEP=2;
 const F_DEFAULT=[22,18,12,8], D_DEFAULT=[24,20,16];
 const F_EXPECT=[20,16,11,6], D_EXPECT=[24,19,13];
+
+/* ---- matchup lanes: you win lanes, not a total ---- */
+const LANE_BASE={vsStrike:400, vsGuard:585, vsDepth:158};  // opposing-lane strength at game 0 (default deploy comfortably ahead)
+const LANE_RAMP=0.04;                                       // difficulty ramp per game — cushion eaten by late rounds
+const LANE_SWING=75;                                        // per-lane variance — "outplayed even when better"
+const ANCHOR_K=700;                                         // goalie relief -> Guard-lane value
+// House identity comes from WEIGHTS (amplify a contested lane) + gentle muls, not from inflating a lane.
+const HOUSES={
+  SYND:  {name:'The Syndicate', tag:'balanced',           mul:{s:1,   g:1,   d:1   }, w:{s:1,  g:1,  d:1  }, traits:['No glaring weakness — beat them straight up.']},
+  CELLAR:{name:'Cellar Rats',   tag:'four-line grinders', mul:{s:1,   g:1,   d:1.12}, w:{s:1,  g:1,  d:1.9}, traits:['They roll four lines — the DEPTH lane decides this one.','Thin on skill up top.']},
+  ACES:  {name:'The Aces',      tag:'lethal top unit',    mul:{s:0.95,g:1.05,d:1   }, w:{s:1,  g:1.4,d:1  }, traits:['Their top unit is lethal — your GUARD lane is under siege.','Soft depth to exploit.']},
+  WALL:  {name:'The Wall',      tag:'shutdown structure', mul:{s:1.1, g:1,   d:1   }, w:{s:1.5,g:1,  d:1  }, traits:['They smother skill — your STRIKE lane is walled off.','Win the game elsewhere.']},
+  HUNT:  {name:'Star Hunters',  tag:'shadow the ace',     mul:{s:1,   g:1,   d:1   }, w:{s:1,  g:1,  d:1  }, traits:['They shadow your most-used forward — his output is erased.'], shadow:true},
+};
+const HOUSE_SCHEDULE=['SYND','CELLAR','WALL','ACES','HUNT','CELLAR','WALL','ACES','HUNT'];  // games 0-8; game 9 = boss
 const TRAITS=['SNIPER','PLAYMAKER','GRINDER','WALL','ROVER','ANCHOR'];
 const SYNERGY={'PLAYMAKER|SNIPER':.07,'GRINDER|GRINDER':.05,'ROVER|WALL':.06,
   'ANCHOR|ROVER':.05,'SNIPER|SNIPER':-.05,'PLAYMAKER|PLAYMAKER':-.04,'ANCHOR|ANCHOR':-.03};
@@ -346,17 +373,22 @@ function render(){
   S.pairs.forEach((p,i)=>{ if(p.some(x=>!x))return; const m=S.dMin[i];
     p.forEach(x=>{ if(D_EXPECT[x.role]-m>0)shorted++; }); });
 
-  const s=score(), o=Math.round(oppScore(S.game)*(1-rel*0.55));  // effective opp — same relief resolution applies
-  document.getElementById('rF').textContent=Math.round(s.f);
-  document.getElementById('rD').textContent=Math.round(s.d);
-  document.getElementById('rG').textContent='-'+Math.round(rel*100)+'%';
+  const house=houseFor(S.game), ev=evalLanes(house,false);
+  document.getElementById('rhTag').textContent=house.tag;
+  document.getElementById('rhName').textContent=house.name;
+  document.getElementById('rhTraits').innerHTML=house.traits.map(t=>'▸ '+t).join('<br>');
+  document.getElementById('rhLanes').innerHTML=ev.lanes.map(L=>{
+    const col=L.m>25?'var(--ok)':L.m<-25?'var(--penalty)':'var(--burn)';
+    const word=L.m>25?'FAVOURED':L.m<-25?'UNDERDOG':'EVEN';
+    return `<div class="lane"><div class="lane-k">${L.k}${L.w!==1?`<i>×${L.w}</i>`:''}</div>`
+      +`<div class="lane-vs">${Math.round(L.you)} <s>vs</s> ${Math.round(L.them)}</div>`
+      +`<div class="lane-chip" style="color:${col}">${word}</div></div>`;
+  }).join('');
   const sh=document.getElementById('rShort');
   sh.textContent=shorted; sh.style.color=shorted>0?'var(--penalty)':'var(--chalk)';
-  document.getElementById('rO').textContent=o;
-  document.getElementById('rTotal').textContent=Math.round(s.total);
-  const diff=s.total-o, v=document.getElementById('rVerdict');
-  v.textContent = diff>90?'Comfortable':diff>0?'Narrow edge':diff>-90?'Underdog':'Outmatched';
-  v.style.color = diff>0?'var(--ok)':diff>-90?'var(--burn)':'var(--penalty)';
+  const v=document.getElementById('rVerdict');
+  v.textContent = ev.total>150?'Favoured on paper':ev.total>0?'Slight edge — but lanes swing':ev.total>-150?'Underdog tonight':'Overmatched';
+  v.style.color = ev.total>0?'var(--ok)':ev.total>-150?'var(--burn)':'var(--penalty)';
 
   const warn=document.getElementById('rWarn');
   if(redline){warn.style.display='block';
@@ -427,13 +459,8 @@ document.getElementById('play').onclick=()=>{
   if(S.over)return;
   if(S.fMin.reduce((a,b)=>a+b,0)!==FMIN_TOTAL||S.dMin.reduce((a,b)=>a+b,0)!==DMIN_TOTAL)return;
   const idx=S.game, boss=isBoss(idx);
-  const s=score(); let mine=s.total*(0.97+rng()*0.06);
-  let opp=oppScore(idx)*(0.97+rng()*0.06);
-  opp*=(1-relief()*0.55);
-  let bossNote='';
-  if(boss){ const arch=pickArchetype(s);
-    bossNote=arch.text; mine*=arch.mult; }
-  const won=mine>opp;
+  const house=houseFor(idx), ev=evalLanes(house,true);   // variance -> outplayed even when better
+  const won=ev.total>0;
   won?S.wins++:S.losses++;
 
   // fatigue, discontent, chemistry
@@ -461,34 +488,68 @@ document.getElementById('play').onclick=()=>{
   Object.keys(S.reps).forEach(k=>{if(!played.has(k))S.reps[k]=Math.max(0,S.reps[k]-1)});
 
   S.game++;
-  showResult(won,Math.round(mine),Math.round(opp),boss,bossNote);
+  showResult(won,ev,house,boss);
 };
 
-function pickArchetype(s){
-  if(s.f/(s.d||1) > 2.6) return {mult:.86, text:'SHUTDOWN CORPS — they read your forward-heavy build and smothered it. −14% offence.'};
-  const worst=[...S.lines[3]].filter(Boolean);
-  const l4=worst.reduce((a,p)=>a+p.rating,0)/Math.max(1,worst.length);
-  if(l4<70) return {mult:.88, text:'DEPTH GRINDERS — they rolled four lines at your soft bottom six. −12%.'};
-  const all=[...S.lines.flat(),...S.pairs.flat()].filter(Boolean);
-  const star=all.reduce((a,p)=>p.rating>a.rating?p:a);
-  if(star.rating>=87) return {mult:.90, text:`STAR HUNTERS — they shadowed ${star.name} all night. −10%.`};
-  return {mult:.94, text:'FORECHECK PRESSURE — relentless, but nothing specific to exploit. −6%.'};
+/* ---- lane engine: three head-to-head matchups, not one total ---- */
+function laneValues(){
+  let strike=0, depth=0, guard=0;
+  S.lines.forEach((l,i)=>{ if(l.some(p=>!p))return;
+    const c=l.reduce((a,p)=>a+eff(p),0)*unitChem(l,false)*fWeight(S.fMin[i]);
+    if(i<2)strike+=c; else depth+=c; });
+  S.pairs.forEach((p,i)=>{ if(p.some(x=>!x))return;
+    guard+=p.reduce((a,x)=>a+eff(x),0)*unitChem(p,true)*dWeight(S.dMin[i])*1.55; });
+  guard+=relief()*ANCHOR_K;                 // the Anchor stiffens the Guard lane
+  return {strike,depth,guard};
+}
+function houseFor(g){ return isBoss(g)?worstHouse():(HOUSES[HOUSE_SCHEDULE[g]]||HOUSES.SYND); }
+function worstHouse(){                        // the final counters whatever you leaned on
+  let worst=HOUSES.SYND, t=Infinity;
+  Object.values(HOUSES).forEach(h=>{ const v=evalLanes(h,false).total; if(v<t){t=v;worst=h;} });
+  return {...worst, name:worst.name, boss:true};
+}
+function evalLanes(house,variance){
+  const you=laneValues();
+  let strike=you.strike;
+  if(house.shadow) strike*=0.82;             // your top-six blunted by the shadow
+  const ramp=1+LANE_RAMP*S.game+(house.boss?0.12:0);
+  const H={ s:LANE_BASE.vsStrike*ramp*house.mul.s,   // their D vs your Strike
+            g:LANE_BASE.vsGuard *ramp*house.mul.g,   // their attack vs your Guard
+            d:LANE_BASE.vsDepth *ramp*house.mul.d }; // their depth vs yours
+  const nz=()=>variance?(rng()-0.5)*LANE_SWING:0;
+  const mS=strike-H.s+nz(), mG=you.guard-H.g+nz(), mD=you.depth-H.d+nz();
+  const total=mS*house.w.s + mG*house.w.g + mD*house.w.d;
+  return {total, lanes:[
+    {k:'STRIKE', you:strike,    them:H.s, m:mS, w:house.w.s},
+    {k:'GUARD',  you:you.guard, them:H.g, m:mG, w:house.w.g},
+    {k:'DEPTH',  you:you.depth, them:H.d, m:mD, w:house.w.d} ]};
+}
+function laneScoreline(total){
+  let my=2+Math.max(0,Math.round(total/170)), op=2+Math.max(0,Math.round(-total/170));
+  if(total>0&&my<=op)my=op+1; if(total<=0&&op<=my)op=my+1;
+  return {my,op};
 }
 
-function showResult(won,mine,opp,boss,note){
+function showResult(won,ev,house,boss){
   const veil=document.getElementById('veil'), m=document.getElementById('modal');
   const dead=S.losses>=3, done=S.game>=10;
   let head = boss ? (won?'Champions':'Fell in the final') : (won?'Win':'Loss');
   if(dead) head='Run over';
   else if(done&&won) head='Champions';
+  const sc=laneScoreline(ev.total);
+  const closeLoss = !won && ev.total>-70;   // you were in it — matchup luck
+  const laneRows=ev.lanes.map(L=>{ const w=L.m>0;
+    return `<div class="lane"><span class="lane-k">${w?'WON':'LOST'} ${L.k}${L.w!==1?' ×'+L.w:''}</span>`
+      +`<span style="color:${w?'var(--ok)':'var(--penalty)'};font-weight:600">${L.m>0?'+':''}${Math.round(L.m)}</span></div>`;
+  }).join('');
 
   m.innerHTML=`<h3>${head}</h3>
-    <p>${boss?'The final.':'Game '+S.game+' of 10.'}</p>
-    ${note?`<div class="note">${note}</div>`:''}
+    <p>vs ${house.name} — ${boss?'the final':'game '+S.game+' of 10'}.${closeLoss?' You had the better team; they matched up better tonight.':''}</p>
     <div class="scoreline">
-      <div><div class="n" style="color:${won?'var(--ok)':'var(--penalty)'}">${mine}</div><div class="l">Sin Bin</div></div>
-      <div><div class="n" style="color:var(--frost)">${opp}</div><div class="l">Opponent</div></div>
+      <div><div class="n" style="color:${won?'var(--ok)':'var(--penalty)'}">${sc.my}</div><div class="l">Sin Bin</div></div>
+      <div><div class="n" style="color:var(--frost)">${sc.op}</div><div class="l">${house.name}</div></div>
     </div>
+    <div class="lanes res">${laneRows}</div>
     ${dead||done?`<button onclick="newGame();document.getElementById('veil').classList.add('hide')">New run</button>`
       :`<p style="margin-bottom:10px">Choose one before the next game.</p>
         <div class="opts" id="opts"></div>`}`;
