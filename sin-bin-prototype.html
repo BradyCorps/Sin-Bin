@@ -211,7 +211,8 @@ button.ghost:hover{border-color:var(--cold)}
 <script>
 /* ============ CONSTANTS ============ */
 const FATIGUE_RATE=12, EGO_RATE=2.8, SCRATCH_GAP=4;
-const REC=[8,8,6];                 // fatigue recovery/game by round; round 3 = "no rest"
+const REC=[8,8,4];                 // fatigue recovery/game by round; round 3 = "no rest" (clearly reduced)
+const BENCH_CAP=4;                 // press box limit — no unlimited stockpiling from Scout
 const EGO_RATE_MIN=0.45, DISCONTENT_RECOVER=1.5;
 const FREF=22, DREF=24;
 const FMIN_TOTAL=60, DMIN_TOTAL=60, FLINE_CAP=30, DPAIR_CAP=34, MSTEP=2;
@@ -345,7 +346,7 @@ function render(){
   S.pairs.forEach((p,i)=>{ if(p.some(x=>!x))return; const m=S.dMin[i];
     p.forEach(x=>{ if(D_EXPECT[x.role]-m>0)shorted++; }); });
 
-  const s=score(), o=oppScore(S.game);
+  const s=score(), o=Math.round(oppScore(S.game)*(1-rel*0.55));  // effective opp — same relief resolution applies
   document.getElementById('rF').textContent=Math.round(s.f);
   document.getElementById('rD').textContent=Math.round(s.d);
   document.getElementById('rG').textContent='-'+Math.round(rel*100)+'%';
@@ -366,7 +367,11 @@ function render(){
   document.getElementById('tGame').innerHTML=(S.game+1)+'<span style="font-size:15px;color:var(--frost)">/10</span>';
   document.getElementById('tRec').textContent=S.wins+'–'+S.losses;
   document.getElementById('tStrikes').textContent='▮'.repeat(Math.max(0,3-S.losses))||'—';
-  document.getElementById('play').textContent=isBoss(S.game)?'Play the final':'Drop the puck';
+  const fUsed=S.fMin.reduce((a,b)=>a+b,0), dUsed=S.dMin.reduce((a,b)=>a+b,0);
+  const ready=fUsed===FMIN_TOTAL&&dUsed===DMIN_TOTAL;
+  const playBtn=document.getElementById('play'); playBtn.disabled=!ready;
+  playBtn.textContent = ready ? (isBoss(S.game)?'Play the final':'Drop the puck')
+    : 'Assign all minutes — '+(FMIN_TOTAL-fUsed)+'F, '+(DMIN_TOTAL-dUsed)+'D left';
   const mv=document.getElementById('rMove');
   if(S.lastMove){mv.style.display='block';mv.textContent=S.lastMove}else{mv.style.display='none'}
   bind();
@@ -420,6 +425,7 @@ function flash(msg){
 /* ============ GAME RESOLUTION ============ */
 document.getElementById('play').onclick=()=>{
   if(S.over)return;
+  if(S.fMin.reduce((a,b)=>a+b,0)!==FMIN_TOTAL||S.dMin.reduce((a,b)=>a+b,0)!==DMIN_TOTAL)return;
   const idx=S.game, boss=isBoss(idx);
   const s=score(); let mine=s.total*(0.97+rng()*0.06);
   let opp=oppScore(idx)*(0.97+rng()*0.06);
@@ -447,8 +453,11 @@ document.getElementById('play').onclick=()=>{
   S.goalies[1].fatigue=Math.max(0,S.goalies[1].fatigue-9);
 
   const played=new Set();
-  [...S.lines,...S.pairs].forEach(u=>{for(let i=0;i<u.length;i++)for(let j=i+1;j<u.length;j++){
-    const k=[u[i].id,u[j].id].sort().join('-'); S.reps[k]=(S.reps[k]||0)+1; played.add(k)}});
+  const bumpReps=(u,mins)=>{ if(u.some(p=>!p)||mins<=0)return; const gain=Math.min(1,mins/12);
+    for(let i=0;i<u.length;i++)for(let j=i+1;j<u.length;j++){
+      const k=[u[i].id,u[j].id].sort().join('-'); S.reps[k]=(S.reps[k]||0)+gain; played.add(k); }};
+  S.lines.forEach((u,i)=>bumpReps(u,S.fMin[i]));
+  S.pairs.forEach((u,i)=>bumpReps(u,S.dMin[i]));
   Object.keys(S.reps).forEach(k=>{if(!played.has(k))S.reps[k]=Math.max(0,S.reps[k]-1)});
 
   S.game++;
@@ -498,11 +507,11 @@ function buildOptions(){
       const p=all.reduce((a,x)=>x.rating<a.rating?x:a);
       p.rating+=6; p.role=roleOf(p.rating,p.isD);
       return `${p.name} is up to ${p.rating}. His expectation is now ${(p.isD?D_ROLE:F_ROLE)[p.role]}.`}},
-    {t:'Rest',d:'−30 fatigue for everyone. Chemistry unaffected.',f:()=>{
+    {t:'Rest',d:'−18 fatigue for everyone. A lighter week, not a reset.',f:()=>{
       [...S.lines.flat(),...S.pairs.flat(),...S.bench].filter(Boolean)
-        .forEach(p=>p.fatigue=Math.max(0,p.fatigue-30));
-      S.goalies[0].fatigue=Math.max(0,S.goalies[0].fatigue-25);
-      return 'Legs back under the group.'}},
+        .forEach(p=>p.fatigue=Math.max(0,p.fatigue-18));
+      S.goalies[0].fatigue=Math.max(0,S.goalies[0].fatigue-14);
+      return 'Legs a little fresher — but not a full reset.'}},
     {t:'Trade',d:'Ship out your most discontented skater for a clean 78.',f:()=>{
       const all=[...S.lines,...S.pairs,S.bench];
       let worst=null,loc=null;
@@ -511,7 +520,8 @@ function buildOptions(){
       const repl=newPlayer(78,worst.isD,98); loc.arr[loc.i]=repl;
       return `${worst.name} (${Math.round(worst.discontent)} discontent) shipped out for ${repl.name}, 78, expects ${(repl.isD?D_ROLE:F_ROLE)[repl.role]}.`}},
   ];
-  const picks=pool.sort(()=>rng()-.5).slice(0,3);
+  const avail=pool.filter(o=>o.t!=='Scout'||S.bench.length<BENCH_CAP);
+  const picks=avail.sort(()=>rng()-.5).slice(0,3);
   document.getElementById('opts').innerHTML=picks.map((o,i)=>
     `<div class="opt" data-i="${i}"><b>${o.t}</b><span>${o.d}</span></div>`).join('');
   document.querySelectorAll('.opt').forEach(el=>{
