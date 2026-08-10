@@ -82,6 +82,9 @@ h1 span{color:var(--penalty)}
   font-size:8.5px;letter-spacing:.08em;color:var(--frost);margin-top:1px}
 .p-role{color:var(--cold)}
 .p-role.unhappy{color:var(--penalty)}
+.fx{font-family:'IBM Plex Mono',monospace;font-size:8px;letter-spacing:.03em;margin-top:2px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fx.on{color:var(--ok)} .fx.off{color:var(--frost);opacity:.7} .fx.sulk{color:var(--penalty)}
 .bars{display:flex;flex-direction:column;gap:2px;margin-top:5px}
 .bar{height:3px;background:#0d1722;border-radius:1px;overflow:hidden}
 .bar i{display:block;height:100%;border-radius:1px;transition:width .3s}
@@ -123,6 +126,12 @@ h1 span{color:var(--penalty)}
 .opt em{font-style:normal;color:var(--cold);float:right;font-family:'IBM Plex Mono',monospace;font-size:12px}
 .opt.off{opacity:.4;cursor:not-allowed}
 .done{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--ok);padding:4px 0}
+.strainrow{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--frost);margin:10px 0 4px;letter-spacing:.04em}
+.strainrow b{font-family:Oswald,sans-serif;color:var(--chalk);font-weight:500}
+.strainrow b.hot{color:var(--burn)}
+.dev{font-family:'IBM Plex Mono',monospace;font-size:8.5px;letter-spacing:.1em;color:var(--hair);
+  text-transform:uppercase;cursor:pointer;margin-top:6px;text-align:right}
+.dev:hover{color:var(--frost)}
 
 /* ---- buttons ---- */
 button{font-family:Oswald,sans-serif;font-size:14px;font-weight:500;letter-spacing:.16em;
@@ -246,7 +255,7 @@ const COST_LINE=[6,9,12], COST_PAIR=[5,8], COST_ANCHOR=5;
 const F_EXPECT=[20,16,11,6], D_EXPECT=[24,19,13];
 
 /* ---- matchup lanes: you win lanes, not a total ---- */
-const LANE_BASE={vsStrike:375, vsGuard:540, vsDepth:147};  // opposing-lane strength at game 0 (tuned for the bare-start ramp)
+const LANE_BASE={vsStrike:424, vsGuard:610, vsDepth:166};  // opposing-lane strength at game 0 (retuned for the trait engine)
 const LANE_RAMP=0.033;                                      // difficulty ramp per game — cushion eaten by late rounds
 const LANE_SWING=75;                                        // per-lane variance — "outplayed even when better"
 const ANCHOR_K=700;                                         // goalie relief -> Guard-lane value
@@ -265,7 +274,17 @@ const PERIODS=3;
 const INTENSITY={ CONS:{out:0.90,fat:0.60,vr:0.65,label:'Conservative'},  // protect a lead: safer, saves legs, lower ceiling
                   STD:{out:1.00,fat:1.00,vr:1.00,label:'Standard'},
                   ALL:{out:1.10,fat:1.95,vr:1.45,label:'All-Out'} };       // swing it: small edge, big Strain + big variance (a gamble)
-const TRAITS=['SNIPER','PLAYMAKER','GRINDER','WALL','ROVER','ANCHOR'];
+/* ---- the engine lives in the players: conditional traits, placement, minute-thresholds ---- */
+const FWD_CORE=['SNIPER','PLAYMAKER','GRINDER','ROVER'];   // PRIMA is assigned only to high-rated forwards
+const DEF_TRAITS=['ANCHOR','WALL'];
+const TRAIT_DESC={
+  PLAYMAKER:'≥16′ on his line → lifts every linemate',
+  SNIPER:'beside a Playmaker → big STRIKE; alone, ordinary',
+  GRINDER:'depth line (L3/L4) at ≤12′ → +DEPTH & calms linemate egos',
+  ROVER:'always +output, but runs hot — extra Strain',
+  PRIMA:'≥18′ → elite; under 14′ → sulks & poisons his line',
+  ANCHOR:'shields his defence partner from Strain',
+  WALL:'steadies the GUARD lane (+guard, less variance)' };
 const SYNERGY={'PLAYMAKER|SNIPER':.07,'GRINDER|GRINDER':.05,'ROVER|WALL':.06,
   'ANCHOR|ROVER':.05,'SNIPER|SNIPER':-.05,'PLAYMAKER|PLAYMAKER':-.04,'ANCHOR|ANCHOR':-.03};
 const F_ROLE=['1ST LINE','TOP SIX','MIDDLE SIX','DEPTH'];
@@ -289,10 +308,12 @@ function dWeight(m){return m/DREF}
 /* ============ STATE ============ */
 let S;
 function newPlayer(rating,isD,idx){
+  const trait = isD ? DEF_TRAITS[Math.floor(rng()*DEF_TRAITS.length)]
+    : (rating>=80 && rng()<0.33 ? 'PRIMA' : FWD_CORE[Math.floor(rng()*FWD_CORE.length)]);
   return {id:(isD?'D':'F')+idx+'-'+Math.floor(rng()*9999),
     name:NAMES[Math.floor(rng()*NAMES.length)], rating, isD,
     role:roleOf(rating,isD), ego:.6+(rating-62)/30*.9,
-    fatigue:0, discontent:0, trait:TRAITS[Math.floor(rng()*TRAITS.length)]};
+    fatigue:0, discontent:0, trait};
 }
 function newGame(){
   const fwd=[],def=[];
@@ -356,6 +377,37 @@ function relief(){
 }
 function isBoss(i){return i===9}
 
+/* ---- the roster engine: traits fire on placement / minutes / adjacency ---- */
+function lineEngine(u,mins,idx){
+  const ps=u.filter(Boolean), hasPM=ps.some(p=>p.trait==='PLAYMAKER');
+  let mult=1, bonus=0;
+  const states=ps.map(p=>{ let state='—',note='';
+    if(p.trait==='PLAYMAKER'){ if(mins>=16){state='ACTIVE';note='running the line';} else {state='DORMANT';note='needs 16′ to run the line';} }
+    else if(p.trait==='SNIPER'){ if(hasPM){state='ACTIVE';note='finishing the Playmaker';} else {state='DORMANT';note='needs a Playmaker beside him';} }
+    else if(p.trait==='GRINDER'){ if(idx>=2&&mins<=12){state='ACTIVE';note='knows the job';} else {state='DORMANT';note='wasted up the lineup';} }
+    else if(p.trait==='ROVER'){ state='ACTIVE'; note='running hot'; }
+    else if(p.trait==='PRIMA'){ if(mins>=18){state='THRIVING';note='the show';} else if(mins<14){state='SULKING';note='poisoning the line';} else {state='DORMANT';note='wants 18′';} }
+    return {id:p.id, trait:p.trait, state, note}; });
+  if(hasPM&&mins>=16) mult*=1.12;
+  const nSnipe=ps.filter(p=>p.trait==='SNIPER').length; if(hasPM&&nSnipe) bonus+=14*nSnipe;
+  if(states.some(s=>s.trait==='GRINDER'&&s.state==='ACTIVE')) mult*=1.12;
+  const prima=states.find(s=>s.trait==='PRIMA'); if(prima){ if(prima.state==='THRIVING')mult*=1.15; else if(prima.state==='SULKING')mult*=0.80; }
+  if(ps.some(p=>p.trait==='ROVER')) mult*=1.06;
+  return {output:(ps.reduce((a,p)=>a+eff(p),0)+bonus)*mult, states};
+}
+function pairEngine(u,mins){
+  const ps=u.filter(Boolean); let mult=1;
+  const states=ps.map(p=>({id:p.id, trait:p.trait, state:'ACTIVE',
+    note:p.trait==='WALL'?'walling the front':p.trait==='ANCHOR'?'shielding his partner':'holding the line'}));
+  if(ps.some(p=>p.trait==='WALL')) mult*=1.10;
+  return {output:ps.reduce((a,p)=>a+eff(p),0)*mult, states};
+}
+function computeFx(){                       // stash each deployed player's engine state for the cards
+  S._fx={};
+  S.lines.forEach((l,i)=>{ if(i<S.openLines&&!l.some(p=>!p)) lineEngine(l,S.fMin[i],i).states.forEach(s=>S._fx[s.id]=s); });
+  S.pairs.forEach((p,i)=>{ if(i<S.openPairs&&!p.some(x=>!x)) pairEngine(p,S.dMin[i]).states.forEach(s=>S._fx[s.id]=s); });
+}
+
 /* ============ RENDER ============ */
 function pEl(p,where,mins){
   if(!p) return `<div class="p empty">EMPTY</div>`;
@@ -365,9 +417,13 @@ function pEl(p,where,mins){
   let unhappy=false, tag=roleList[p.role];
   if(where==='bench'){ unhappy = p.role<3; tag='SCRATCHED'; }
   else if(mins!==undefined){ const short=expect-mins; if(short>0){unhappy=true; tag=roleList[p.role]+' −'+short+'′';} }
+  const fx=S._fx&&S._fx[p.id];
+  const fxCls=fx?((fx.state==='ACTIVE'||fx.state==='THRIVING')?'on':fx.state==='SULKING'?'sulk':'off'):'off';
+  const fxLine=fx?`${fx.trait} · ${fx.state} — ${fx.note}`:(where==='bench'?`${p.trait} · in the Backroom`:p.trait);
   return `<div class="p${sel}" data-where="${where}" data-id="${p.id}">
     <div class="p-top"><span class="p-name">${p.name}</span><span class="p-rtg">${Math.round(eff(p))}</span></div>
-    <div class="p-meta"><span class="p-role${unhappy?' unhappy':''}">${tag}</span><span>${p.trait}</span></div>
+    <div class="p-meta"><span class="p-role${unhappy?' unhappy':''}">${tag}</span></div>
+    <div class="fx ${fxCls}">${fxLine}</div>
     <div class="bars">
       <div class="bar f"><i style="width:${p.fatigue}%"></i></div>
       <div class="bar d"><i style="width:${p.discontent}%"></i></div>
@@ -395,6 +451,7 @@ function unitEl(u,i,isD){
     <div class="chem"><b style="color:${col}">${c.toFixed(2)}</b><i>CHEM</i></div></div>`;
 }
 function render(){
+  computeFx();                               // refresh every card's ACTIVE/DORMANT state
   document.getElementById('lines').innerHTML=S.lines.map((l,i)=>unitEl(l,i,false)).join('');
   document.getElementById('pairs').innerHTML=S.pairs.map((p,i)=>unitEl(p,i,true)).join('');
   document.getElementById('bench').innerHTML=S.bench.length
@@ -424,12 +481,15 @@ function render(){
   document.getElementById('rhTraits').innerHTML=house.traits.map(t=>'▸ '+t).join('<br>')
     +(isBoss(S.game)?'':`<br><span style="color:var(--frost)">◆ Looming — the final: THE APEX, strong everywhere.</span>`);
   document.getElementById('rhLanes').innerHTML=ev.lanes.map(L=>{
-    const col=L.m>25?'var(--ok)':L.m<-25?'var(--penalty)':'var(--burn)';
-    const word=L.m>25?'FAVOURED':L.m<-25?'UNDERDOG':'EVEN';
+    const m=L.m;
+    const band=m>120?['DOMINANT','var(--ok)']:m>35?['FAVOURED','var(--ok)']:m>-35?['EVEN','var(--burn)']
+      :m>-120?['EXPOSED','var(--penalty)']:['OVERMATCHED','var(--penalty)'];
+    const mid=S.devExact?`${Math.round(L.you)} <s>vs</s> ${Math.round(L.them)}`:'';
     return `<div class="lane"><div class="lane-k">${L.k}${L.w!==1?`<i>×${L.w}</i>`:''}</div>`
-      +`<div class="lane-vs">${Math.round(L.you)} <s>vs</s> ${Math.round(L.them)}</div>`
-      +`<div class="lane-chip" style="color:${col}">${word}</div></div>`;
-  }).join('');
+      +`<div class="lane-vs">${mid}</div>`
+      +`<div class="lane-chip" style="color:${band[1]}">${band[0]}</div></div>`;
+  }).join('')
+    +`<div class="dev" onclick="S.devExact=!S.devExact;render()">${S.devExact?'hide numbers':'show numbers · dev'}</div>`;
   const sh=document.getElementById('rShort');
   sh.textContent=shorted; sh.style.color=shorted>0?'var(--penalty)':'var(--chalk)';
   const v=document.getElementById('rVerdict');
@@ -519,22 +579,26 @@ function periodEval(){
   if(house.shadow) strike-=shadowTargetLoss();
   const ramp=1+LANE_RAMP*S.game+(house.boss?0.08:0);
   const H={ s:LANE_BASE.vsStrike*ramp*house.mul.s, g:LANE_BASE.vsGuard*ramp*house.mul.g, d:LANE_BASE.vsDepth*ramp*house.mul.d };
-  const nz=()=>(rng()-0.5)*LANE_SWING*it.vr;
+  const nz=()=>(rng()-0.5)*LANE_SWING*it.vr/Math.sqrt(PERIODS);   // 3 rolls summed -> keep game-level variance ~constant
   const mS=(strike*it.out-H.s)/PERIODS+nz(), mG=(you.guard*it.out-H.g)/PERIODS+nz(), mD=(you.depth*it.out-H.d)/PERIODS+nz();
   return {mS,mG,mD, total:mS*house.w.s+mG*house.w.g+mD*house.w.d};
 }
 function applyFatigueThird(){
   const it=INTENSITY[S.intensity], rel=relief();
-  const ap=(u,mins,ref)=>u.forEach(p=>{ if(!p)return;
-    p.fatigue=Math.max(0,Math.min(100,p.fatigue+((mins/ref)*FATIGUE_RATE*it.fat*(1-rel)-recover())/PERIODS)); });
-  S.lines.forEach((l,i)=>{ if(!l.some(p=>!p))ap(l,S.fMin[i],FREF); });
-  S.pairs.forEach((p,i)=>{ if(!p.some(x=>!x))ap(p,S.dMin[i],DREF); });
+  const ap=(u,mins,ref,isD)=>{ const hasAnchor=isD&&u.some(p=>p&&p.trait==='ANCHOR');
+    u.forEach(p=>{ if(!p)return; let fm=1;
+      if(p.trait==='ROVER')fm*=1.25;                                 // runs hot
+      if(isD&&hasAnchor&&p.trait!=='ANCHOR')fm*=0.7;                  // Anchor shields his partner
+      p.fatigue=Math.max(0,Math.min(100,p.fatigue+((mins/ref)*FATIGUE_RATE*it.fat*fm*(1-rel)-recover())/PERIODS)); }); };
+  S.lines.forEach((l,i)=>{ if(!l.some(p=>!p))ap(l,S.fMin[i],FREF,false); });
+  S.pairs.forEach((p,i)=>{ if(!p.some(x=>!x))ap(p,S.dMin[i],DREF,true); });
   S.goalies[0].fatigue=Math.min(100,S.goalies[0].fatigue+13/PERIODS);
 }
 function resolvePeriod(){
   const per=periodEval();
   S.pAcc.STRIKE+=per.mS; S.pAcc.GUARD+=per.mG; S.pAcc.DEPTH+=per.mD; S.pTotal+=per.total;
   applyFatigueThird();
+  S.intensity='STD';                         // each break asks for one fresh plan for the next period
   S.pIdx++;
   if(S.pIdx<PERIODS) showBreak(per); else finishGame();
 }
@@ -543,9 +607,11 @@ function finishGame(){
   won?S.wins++:S.losses++;
   const lanesWon=[S.pAcc.STRIKE,S.pAcc.GUARD,S.pAcc.DEPTH].filter(v=>v>0).length;
   S.credits += (won?CREDIT_WIN:0)+lanesWon*CREDIT_LANE;
-  const dis=(u,mins,expect)=>u.forEach(p=>{ if(!p)return; const short=expect[p.role]-mins;
-    if(short>0)p.discontent=Math.min(100,p.discontent+short*EGO_RATE_MIN*p.ego);
-    else p.discontent=Math.max(0,p.discontent-DISCONTENT_RECOVER); });
+  const dis=(u,mins,expect)=>{ const calm=u.some(p=>p&&p.trait==='GRINDER')?0.6:1;   // a Grinder settles the room
+    u.forEach(p=>{ if(!p)return; const short=expect[p.role]-mins;
+      if(short>0)p.discontent=Math.min(100,p.discontent+short*EGO_RATE_MIN*p.ego*calm);
+      else p.discontent=Math.max(0,p.discontent-DISCONTENT_RECOVER);
+      if(p.trait==='PRIMA'&&mins<14)p.discontent=Math.min(100,p.discontent+6); }); };  // sulking prima festers
   S.lines.forEach((l,i)=>{ if(!l.some(p=>!p))dis(l,S.fMin[i],F_EXPECT); });
   S.pairs.forEach((p,i)=>{ if(!p.some(x=>!x))dis(p,S.dMin[i],D_EXPECT); });
   S.bench.forEach(p=>{ p.fatigue=Math.max(0,p.fatigue-8);
@@ -565,15 +631,15 @@ function showBreak(per){
   const m=document.getElementById('modal');
   const lane=(k,acc,now)=>`<div class="lane"><span class="lane-k">${acc>0?'WINNING':'LOSING'} ${k}</span>`
     +`<span style="color:${now>0?'var(--ok)':'var(--penalty)'}">this pd ${now>0?'+':''}${Math.round(now)}</span></div>`;
-  const tired=[];
-  S.lines.forEach((l,i)=>{ if(i<S.openLines&&!l.some(x=>!x)&&l.reduce((a,x)=>a+x.fatigue,0)/3>55)tired.push('L'+(i+1)); });
-  S.pairs.forEach((p,i)=>{ if(i<S.openPairs&&!p.some(x=>!x)&&p.reduce((a,x)=>a+x.fatigue,0)/2>55)tired.push('D'+(i+1)); });
+  const strain=[];
+  S.lines.forEach((l,i)=>{ if(i<S.openLines&&!l.some(x=>!x)){ const f=Math.round(l.reduce((a,x)=>a+x.fatigue,0)/3); strain.push(`<b class="${f>60?'hot':''}">L${i+1}</b> ${f}`); }});
+  S.pairs.forEach((p,i)=>{ if(i<S.openPairs&&!p.some(x=>!x)){ const f=Math.round(p.reduce((a,x)=>a+x.fatigue,0)/2); strain.push(`<b class="${f>60?'hot':''}">D${i+1}</b> ${f}`); }});
+  strain.push(`<b class="${S.goalies[0].fatigue>60?'hot':''}">G</b> ${Math.round(S.goalies[0].fatigue)}`);
   const acts=breakActions();
   m.innerHTML=`<h3>End of Period ${S.pIdx}</h3>
-    <p>vs ${S.house.name} — you're ${S.pTotal>0?'ahead':'behind'} on aggregate. One coaching call, then back out.</p>
+    <p>vs ${S.house.name} — ${S.pTotal>0?'ahead':'behind'} on aggregate after ${S.pIdx} of ${PERIODS}. One coaching call for the next period.</p>
     <div class="lanes res">${lane('STRIKE',S.pAcc.STRIKE,per.mS)}${lane('GUARD',S.pAcc.GUARD,per.mG)}${lane('DEPTH',S.pAcc.DEPTH,per.mD)}</div>
-    ${tired.length?`<div class="note">Gassed: ${tired.join(', ')} — pull their minutes or sit back.</div>`:''}
-    <p style="margin:12px 0 6px">Intensity: <b>${INTENSITY[S.intensity].label}</b>. Make one call:</p>
+    <div class="strainrow">Strain — ${strain.join(' · ')}</div>
     <div class="opts" id="brk"></div>`;
   document.getElementById('brk').innerHTML=acts.map((a,i)=>`<div class="opt" data-i="${i}"><b>${a.t}</b><span>${a.d}</span></div>`).join('');
   document.querySelectorAll('#brk .opt').forEach(el=>el.onclick=()=>{ acts[+el.dataset.i].f(); document.getElementById('veil').classList.add('hide'); resolvePeriod(); });
@@ -582,13 +648,13 @@ function showBreak(per){
 function breakActions(){
   const a=[];
   if(S.openLines>=3){
-    a.push({t:'Load the top six',d:'Shift minutes into L1–L2 — press the STRIKE lane.',f:()=>shiftFwd(true)});
-    a.push({t:'Roll four lines',d:'Shift minutes into L3–L4 — press the DEPTH lane.',f:()=>shiftFwd(false)});
+    a.push({t:'Load the top six',d:'Move ~8′ from L3–L4 into L1–L2 — rest of game.',f:()=>shiftFwd(true)});
+    a.push({t:'Roll four lines',d:'Move ~8′ from L1–L2 into L3–L4 — rest of game.',f:()=>shiftFwd(false)});
   }
-  if(S.intensity!=='CONS') a.push({t:'Sit back',d:'Conservative: less output, save legs — protect a lead.',f:()=>{S.intensity='CONS';}});
-  if(S.intensity!=='ALL')  a.push({t:'Empty the tank',d:'All-Out: more output, much more Strain — swing it.',f:()=>{S.intensity='ALL';}});
-  if(S.goalies[1]) a.push({t:'Change the Anchor',d:'Swap your goalie for the rest of the game.',f:()=>{[S.goalies[0],S.goalies[1]]=[S.goalies[1],S.goalies[0]];}});
-  a.push({t:'Hold',d:'No change — trust the plan.',f:()=>{}});
+  a.push({t:'Sit back',d:'Conservative next period: −output, save legs, safer.',f:()=>{S.intensity='CONS';}});
+  a.push({t:'Empty the tank',d:'All-Out next period: +output, heavy Strain — a gamble.',f:()=>{S.intensity='ALL';}});
+  if(S.goalies[1]) a.push({t:'Change the Anchor',d:'Swap goalie for the rest of the game.',f:()=>{[S.goalies[0],S.goalies[1]]=[S.goalies[1],S.goalies[0]];}});
+  a.push({t:'Hold — play it straight',d:'Standard next period.',f:()=>{}});
   return a;
 }
 function shiftFwd(toStrike){
@@ -612,11 +678,11 @@ function fixMinutes(){
 /* ---- lane engine: three head-to-head matchups, not one total ---- */
 function laneValues(){
   let strike=0, depth=0, guard=0;
-  S.lines.forEach((l,i)=>{ if(l.some(p=>!p))return;
-    const c=l.reduce((a,p)=>a+eff(p),0)*unitChem(l,false)*fWeight(S.fMin[i]);
+  S.lines.forEach((l,i)=>{ if(i>=S.openLines||l.some(p=>!p))return;
+    const c=lineEngine(l,S.fMin[i],i).output*unitChem(l,false)*fWeight(S.fMin[i]);
     if(i<2)strike+=c; else depth+=c; });
-  S.pairs.forEach((p,i)=>{ if(p.some(x=>!x))return;
-    guard+=p.reduce((a,x)=>a+eff(x),0)*unitChem(p,true)*dWeight(S.dMin[i])*1.55; });
+  S.pairs.forEach((p,i)=>{ if(i>=S.openPairs||p.some(x=>!x))return;
+    guard+=pairEngine(p,S.dMin[i]).output*unitChem(p,true)*dWeight(S.dMin[i])*1.55; });
   guard+=relief()*ANCHOR_K;                 // the Anchor stiffens the Guard lane
   return {strike,depth,guard};
 }
@@ -657,14 +723,15 @@ function showResult(won,ev,house,boss){
   if(dead) head='Run over';
   else if(done&&won) head='Champions';
   const sc=laneScoreline(ev.total);
-  const closeLoss = !won && ev.total>-70;   // you were in it — matchup luck
+  const lw=ev.lanes.filter(L=>L.m>0).length;
+  const closeLoss = !won && ev.total>-70;   // decided on the margins
   const laneRows=ev.lanes.map(L=>{ const w=L.m>0;
     return `<div class="lane"><span class="lane-k">${w?'WON':'LOST'} ${L.k}${L.w!==1?' ×'+L.w:''}</span>`
       +`<span style="color:${w?'var(--ok)':'var(--penalty)'};font-weight:600">${L.m>0?'+':''}${Math.round(L.m)}</span></div>`;
   }).join('');
 
   m.innerHTML=`<h3>${head}</h3>
-    <p>vs ${house.name} — ${boss?'the final':'game '+S.game+' of 10'}.${closeLoss?' You had the better team; they matched up better tonight.':''}</p>
+    <p>vs ${house.name} — ${boss?'the final':'game '+S.game+' of 10'}. You took ${lw} of 3 lanes.${closeLoss?' A coin-flip — decided on the margins.':''}</p>
     <div class="scoreline">
       <div><div class="n" style="color:${won?'var(--ok)':'var(--penalty)'}">${sc.my}</div><div class="l">Sin Bin</div></div>
       <div><div class="n" style="color:var(--frost)">${sc.op}</div><div class="l">${house.name}</div></div>
@@ -685,10 +752,18 @@ function showBetween(){
     S.drafted=false;
   }
   const shop=shopOptions();
+  if(S.bench.length>BENCH_CAP){                     // over capacity — you choose who to cut, not the lowest number
+    m.innerHTML=`<h3>Backroom full</h3>
+      <p>Your pool is over ${BENCH_CAP}. Release one — your call.</p>
+      <div class="opts">${S.bench.map((p,i)=>`<div class="opt" data-rel="${i}"><b>${p.name} · ${p.rating}</b>`
+        +`<span>${p.isD?'DEFENCE':'FORWARD'} · ${p.trait} — ${TRAIT_DESC[p.trait]||''}</span></div>`).join('')}</div>`;
+    document.querySelectorAll('[data-rel]').forEach(el=>el.onclick=()=>{ const c=S.bench.splice(+el.dataset.rel,1)[0]; S.lastMove=`Released ${c.name}.`; showBetween(); });
+    document.getElementById('veil').classList.remove('hide'); return;
+  }
   const draftHtml = S.drafted
     ? `<div class="done">✓ Signed for this cycle.</div>`
     : S.draftOffer.map((p,i)=>`<div class="opt" data-draft="${i}"><b>${p.name} · ${p.rating}</b>`
-        +`<span>${p.isD?'DEFENCE':'FORWARD'} · ${p.trait} · expects ${(p.isD?D_ROLE:F_ROLE)[p.role]}</span></div>`).join('');
+        +`<span>${p.isD?'DEFENCE':'FORWARD'} · ${p.trait} — ${TRAIT_DESC[p.trait]||''}</span></div>`).join('');
   const shopHtml = shop.map((o,i)=>`<div class="opt${S.credits>=o.c?'':' off'}" data-shop="${i}">`
       +`<b>${o.t}<em>${o.c}c</em></b><span>${o.d}</span></div>`).join('');
   m.innerHTML=`<h3>The Backroom</h3>
@@ -698,10 +773,8 @@ function showBetween(){
     <button onclick="goLive()">Go live →</button>`;
   document.querySelectorAll('[data-draft]').forEach(el=>el.onclick=()=>{
     const p=S.draftOffer[+el.dataset.draft]; S.bench.push(p); autofillOpen();
-    S.drafted=true; S.lastMove=`Drafted ${p.name} (${p.rating}, expects ${(p.isD?D_ROLE:F_ROLE)[p.role]}).`;
-    while(S.bench.length>BENCH_CAP){ let lo=0; S.bench.forEach((b,i)=>{if(b.rating<S.bench[lo].rating)lo=i;});
-      const cut=S.bench.splice(lo,1)[0]; S.lastMove+=` Backroom full — released ${cut.name}.`; }
-    showBetween();
+    S.drafted=true; S.lastMove=`Drafted ${p.name} (${p.rating}).`;
+    showBetween();                                   // if now over cap, next render is release mode
   });
   document.querySelectorAll('[data-shop]').forEach(el=>el.onclick=()=>{
     const o=shopOptions()[+el.dataset.shop]; if(!o||S.credits<o.c)return;
