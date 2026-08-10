@@ -114,6 +114,15 @@ h1 span{color:var(--penalty)}
 .lane-chip{min-width:64px;text-align:right;font-weight:600;letter-spacing:.05em}
 .lanes.res{margin:14px 0}
 .lanes.res .lane{font-size:12px;padding:5px 0;border-bottom:1px dotted var(--hair)}
+.p.locked{opacity:.4;border-style:dashed;font-family:'IBM Plex Mono',monospace;font-size:9.5px;
+  letter-spacing:.1em;color:var(--frost);display:flex;align-items:center;justify-content:center;cursor:default}
+.unit.locked{opacity:.72}
+.bsec{margin-bottom:14px}
+.bh{font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--frost);margin-bottom:6px}
+.opt em{font-style:normal;color:var(--cold);float:right;font-family:'IBM Plex Mono',monospace;font-size:12px}
+.opt.off{opacity:.4;cursor:not-allowed}
+.done{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--ok);padding:4px 0}
 
 /* ---- buttons ---- */
 button{font-family:Oswald,sans-serif;font-size:14px;font-weight:500;letter-spacing:.16em;
@@ -165,6 +174,7 @@ button.ghost:hover{border-color:var(--cold)}
   <div class="track">
     <div><div class="k">Round</div><div class="v" id="tRound">1</div></div>
     <div><div class="k">Game</div><div class="v" id="tGame">1<span style="font-size:15px;color:var(--frost)">/10</span></div></div>
+    <div><div class="k">Credits</div><div class="v" id="tCredits" style="color:var(--cold)">0</div></div>
     <div><div class="k">Record</div><div class="v" id="tRec">0–0</div></div>
     <div><div class="k">Strikes left</div><div class="v strikes" id="tStrikes">▮▮▮</div></div>
   </div>
@@ -195,7 +205,7 @@ button.ghost:hover{border-color:var(--cold)}
       <div id="goalies" class="bench-list"></div>
     </div>
     <div class="card" style="margin-bottom:14px">
-      <h2>Press box <em>scratched</em></h2>
+      <h2>Backroom <em>your pool</em></h2>
       <div id="bench" class="bench-list"></div>
     </div>
     <div class="card" style="margin-bottom:14px">
@@ -227,13 +237,17 @@ const REC=[8,8,4];                 // fatigue recovery/game by round; round 3 = 
 const BENCH_CAP=4;                 // press box limit — no unlimited stockpiling from Scout
 const EGO_RATE_MIN=0.45, DISCONTENT_RECOVER=1.5;
 const FREF=22, DREF=24;
-const FMIN_TOTAL=60, DMIN_TOTAL=60, FLINE_CAP=30, DPAIR_CAP=34, MSTEP=2;
+const FMIN_TOTAL=60, DMIN_TOTAL=60, FLINE_CAP=38, DPAIR_CAP=42, MSTEP=2;
 const F_DEFAULT=[22,18,12,8], D_DEFAULT=[24,20,16];
+/* ---- Currency Wars ramp: start bare, unlock capacity, draft your pool ---- */
+const START_LINES=2, START_PAIRS=1, START_CREDITS=2;
+const CREDIT_WIN=4, CREDIT_LANE=1;                 // earned per game -> good play compounds
+const COST_LINE=[6,9,12], COST_PAIR=[5,8], COST_ANCHOR=5;
 const F_EXPECT=[20,16,11,6], D_EXPECT=[24,19,13];
 
 /* ---- matchup lanes: you win lanes, not a total ---- */
-const LANE_BASE={vsStrike:400, vsGuard:585, vsDepth:158};  // opposing-lane strength at game 0 (default deploy comfortably ahead)
-const LANE_RAMP=0.04;                                       // difficulty ramp per game — cushion eaten by late rounds
+const LANE_BASE={vsStrike:375, vsGuard:540, vsDepth:147};  // opposing-lane strength at game 0 (tuned for the bare-start ramp)
+const LANE_RAMP=0.033;                                      // difficulty ramp per game — cushion eaten by late rounds
 const LANE_SWING=75;                                        // per-lane variance — "outplayed even when better"
 const ANCHOR_K=700;                                         // goalie relief -> Guard-lane value
 // House identity comes from WEIGHTS (amplify a contested lane) + gentle muls, not from inflating a lane.
@@ -244,7 +258,7 @@ const HOUSES={
   WALL:  {name:'The Wall',      tag:'shutdown structure', mul:{s:1.1, g:1,   d:1   }, w:{s:1.5,g:1,  d:1  }, traits:['They smother skill — your STRIKE lane is walled off.','Win the game elsewhere.']},
   HUNT:  {name:'Star Hunters',  tag:'shadow the ace',     mul:{s:1,   g:1,   d:1   }, w:{s:1,  g:1,  d:1  }, traits:['They shadow your most-used forward — his output is erased.'], shadow:true},
 };
-const HOUSE_SCHEDULE=['SYND','CELLAR','WALL','ACES','HUNT','CELLAR','WALL','ACES','HUNT'];  // games 0-8; game 9 = boss
+const HOUSE_SCHEDULE=['SYND','WALL','CELLAR','HUNT','ACES','CELLAR','WALL','ACES','HUNT'];  // games 0-8; game 9 = boss
 const TRAITS=['SNIPER','PLAYMAKER','GRINDER','WALL','ROVER','ANCHOR'];
 const SYNERGY={'PLAYMAKER|SNIPER':.07,'GRINDER|GRINDER':.05,'ROVER|WALL':.06,
   'ANCHOR|ROVER':.05,'SNIPER|SNIPER':-.05,'PLAYMAKER|PLAYMAKER':-.04,'ANCHOR|ANCHOR':-.03};
@@ -276,17 +290,47 @@ function newPlayer(rating,isD,idx){
 }
 function newGame(){
   const fwd=[],def=[];
-  for(let i=0;i<13;i++) fwd.push(newPlayer(Math.round(64+rng()*24),false,i));
-  for(let i=0;i<7;i++)  def.push(newPlayer(Math.round(64+rng()*22),true,i));
+  for(let i=0;i<7;i++) fwd.push(newPlayer(Math.round(70+rng()*16),false,i));  // small starting pool: 6 dressed + 1 spare
+  for(let i=0;i<3;i++) def.push(newPlayer(Math.round(72+rng()*12),true,i));   // 2 dressed + 1 spare
   fwd.sort((a,b)=>b.rating-a.rating); def.sort((a,b)=>b.rating-a.rating);
-  S={ lines:[fwd.slice(0,3),fwd.slice(3,6),fwd.slice(6,9),fwd.slice(9,12)],
-      pairs:[def.slice(0,2),def.slice(2,4),def.slice(4,6)],
-      bench:[fwd[12],def[6]],
-      goalies:[newPlayer(Math.round(74+rng()*12),false,90),newPlayer(Math.round(66+rng()*8),false,91)],
-      fMin:F_DEFAULT.slice(), dMin:D_DEFAULT.slice(),
+  S={ lines:[fwd.slice(0,3),fwd.slice(3,6),[null,null,null],[null,null,null]],  // L3/L4 locked
+      pairs:[def.slice(0,2),[null,null],[null,null]],                            // D2/D3 locked
+      bench:[fwd[6],def[2]],
+      goalies:[newPlayer(Math.round(76+rng()*8),false,90),newPlayer(Math.round(68+rng()*8),false,91)],
+      openLines:START_LINES, openPairs:START_PAIRS, credits:START_CREDITS,
+      fMin:[0,0,0,0], dMin:[0,0,0],
       reps:{}, game:0, wins:0, losses:0, sel:null, over:false };
   S.goalies.forEach(g=>{g.name=NAMES[Math.floor(rng()*NAMES.length)];g.isG=true});
-  render();
+  redefaultMinutes(); render();
+}
+function redefaultMinutes(){                         // spread 60 across OPEN units only
+  const fD={1:[60],2:[32,28],3:[24,20,16],4:[22,18,12,8]}[S.openLines]||[22,18,12,8];
+  const dD={1:[60],2:[34,26],3:[24,20,16]}[S.openPairs]||[24,20,16];
+  S.fMin=[0,0,0,0]; fD.forEach((v,i)=>S.fMin[i]=v);
+  S.dMin=[0,0,0];   dD.forEach((v,i)=>S.dMin[i]=v);
+}
+function laneCap(kind){ const n=kind==='pairs'?S.openPairs:S.openLines;
+  return n<=1?(kind==='pairs'?DMIN_TOTAL:FMIN_TOTAL):(kind==='pairs'?DPAIR_CAP:FLINE_CAP); }
+function callup(isD){ return newPlayer(Math.round(66+rng()*8),isD,200+Math.floor(rng()*9999)); }
+function takeBench(isD){ let bi=-1;
+  S.bench.forEach((p,i)=>{ if(p&&p.isD===isD&&(bi<0||p.rating>S.bench[bi].rating))bi=i; });
+  return bi<0?null:S.bench.splice(bi,1)[0]; }
+function autofillOpen(){                              // fill open slots from Backroom, then weak call-ups
+  for(let i=0;i<S.openLines;i++)for(let j=0;j<3;j++) if(!S.lines[i][j]) S.lines[i][j]=takeBench(false)||callup(false);
+  for(let i=0;i<S.openPairs;i++)for(let j=0;j<2;j++) if(!S.pairs[i][j]) S.pairs[i][j]=takeBench(true)||callup(true);
+}
+function shopOptions(){
+  const o=[];
+  if(S.openLines<4) o.push({t:'Open Triad '+(S.openLines+1), c:COST_LINE[S.openLines-START_LINES],
+    d:'Dress another forward line. Spreads Exposure (fatigue relief) and opens the DEPTH lane.',
+    f:()=>{ S.openLines++; redefaultMinutes(); autofillOpen(); }});
+  if(S.openPairs<3) o.push({t:'Open Guard pair '+(S.openPairs+1), c:COST_PAIR[S.openPairs-START_PAIRS],
+    d:'Dress another defence pair. Strengthens the GUARD lane and saves your D’s legs.',
+    f:()=>{ S.openPairs++; redefaultMinutes(); autofillOpen(); }});
+  o.push({t:'Upgrade the Anchor', c:COST_ANCHOR,
+    d:'+4 to your starting goalie. Stiffens the GUARD lane for the rest of the run.',
+    f:()=>{ S.goalies[0].rating=Math.min(99,S.goalies[0].rating+4); }});
+  return o;
 }
 
 /* ============ MECHANICS ============ */
@@ -333,10 +377,14 @@ function pEl(p,where,mins){
     </div></div>`;
 }
 function unitEl(u,i,isD){
-  const c=unitChem(u,isD), col=c>=1.08?'var(--ok)':c>=.95?'var(--cold)':'var(--penalty)';
   const lbl=isD?['D1','D2','D3'][i]:['L1','L2','L3','L4'][i];
   const kind=isD?'pairs':'lines';
-  const arr=isD?S.dMin:S.fMin, total=isD?DMIN_TOTAL:FMIN_TOTAL, cap=isD?DPAIR_CAP:FLINE_CAP;
+  if(i>=(isD?S.openPairs:S.openLines)) return `<div class="unit locked">`
+    +`<div class="unit-label"><b>${lbl}</b></div>`
+    +`<div class="slots"><div class="p locked">LOCKED — open in the Backroom</div></div>`
+    +`<div class="chem"></div></div>`;
+  const c=unitChem(u,isD), col=c>=1.08?'var(--ok)':c>=.95?'var(--cold)':'var(--penalty)';
+  const arr=isD?S.dMin:S.fMin, total=isD?DMIN_TOTAL:FMIN_TOTAL, cap=laneCap(kind);
   const mins=arr[i], used=arr.reduce((a,b)=>a+b,0);
   const decOff=mins<=0, incOff=mins>=cap||used>=total;
   return `<div class="unit">
@@ -398,6 +446,7 @@ function render(){
   document.getElementById('tRound').textContent=Math.min(3,Math.floor(S.game/3)+1);
   document.getElementById('tGame').innerHTML=(S.game+1)+'<span style="font-size:15px;color:var(--frost)">/10</span>';
   document.getElementById('tRec').textContent=S.wins+'–'+S.losses;
+  document.getElementById('tCredits').textContent=S.credits;
   document.getElementById('tStrikes').textContent='▮'.repeat(Math.max(0,3-S.losses))||'—';
   const fUsed=S.fMin.reduce((a,b)=>a+b,0), dUsed=S.dMin.reduce((a,b)=>a+b,0);
   const ready=fUsed===FMIN_TOTAL&&dUsed===DMIN_TOTAL;
@@ -429,7 +478,7 @@ function bind(){
 function adjMin(kind,i,dir){
   const arr=kind==='pairs'?S.dMin:S.fMin;
   const total=kind==='pairs'?DMIN_TOTAL:FMIN_TOTAL;
-  const cap=kind==='pairs'?DPAIR_CAP:FLINE_CAP;
+  const cap=laneCap(kind);
   const used=arr.reduce((a,b)=>a+b,0);
   if(dir>0){ const room=Math.min(MSTEP,total-used,cap-arr[i]); if(room>0)arr[i]+=room; }
   else arr[i]=Math.max(0,arr[i]-MSTEP);
@@ -462,6 +511,7 @@ document.getElementById('play').onclick=()=>{
   const house=houseFor(idx), ev=evalLanes(house,true);   // variance -> outplayed even when better
   const won=ev.total>0;
   won?S.wins++:S.losses++;
+  S.credits += (won?CREDIT_WIN:0) + ev.lanes.filter(L=>L.m>0).length*CREDIT_LANE;
 
   // fatigue, discontent, chemistry
   const rel=relief();
@@ -512,7 +562,7 @@ function evalLanes(house,variance){
   const you=laneValues();
   let strike=you.strike;
   if(house.shadow) strike*=0.82;             // your top-six blunted by the shadow
-  const ramp=1+LANE_RAMP*S.game+(house.boss?0.12:0);
+  const ramp=1+LANE_RAMP*S.game+(house.boss?0.08:0);
   const H={ s:LANE_BASE.vsStrike*ramp*house.mul.s,   // their D vs your Strike
             g:LANE_BASE.vsGuard *ramp*house.mul.g,   // their attack vs your Guard
             d:LANE_BASE.vsDepth *ramp*house.mul.d }; // their depth vs yours
@@ -551,48 +601,42 @@ function showResult(won,ev,house,boss){
     </div>
     <div class="lanes res">${laneRows}</div>
     ${dead||done?`<button onclick="newGame();document.getElementById('veil').classList.add('hide')">New run</button>`
-      :`<p style="margin-bottom:10px">Choose one before the next game.</p>
-        <div class="opts" id="opts"></div>`}`;
+      :`<button onclick="showBetween()">To the Backroom →</button>`}`;
   veil.classList.remove('hide');
-  if(!dead&&!done){ S.over=false; buildOptions(); } else { S.over=true; }
+  S.over = dead||done;
   render();
 }
 
-function buildOptions(){
-  const pool=[
-    {t:'Scout',d:'Sign a free agent. Watch where he expects to play.',f:()=>{
-      const isD=rng()<.3, p=newPlayer(Math.round(74+rng()*16),isD,99);
-      S.bench.push(p); return `Signed ${p.name} (${p.rating}, expects ${(isD?D_ROLE:F_ROLE)[p.role]}). He's in the press box — find him a spot.`}},
-    {t:'Train',d:'+6 rating to your lowest-rated skater.',f:()=>{
-      const all=[...S.lines.flat(),...S.pairs.flat()].filter(Boolean);
-      const p=all.reduce((a,x)=>x.rating<a.rating?x:a);
-      p.rating+=6; p.role=roleOf(p.rating,p.isD);
-      return `${p.name} is up to ${p.rating}. His expectation is now ${(p.isD?D_ROLE:F_ROLE)[p.role]}.`}},
-    {t:'Rest',d:'−18 fatigue for everyone. A lighter week, not a reset.',f:()=>{
-      [...S.lines.flat(),...S.pairs.flat(),...S.bench].filter(Boolean)
-        .forEach(p=>p.fatigue=Math.max(0,p.fatigue-18));
-      S.goalies[0].fatigue=Math.max(0,S.goalies[0].fatigue-14);
-      return 'Legs a little fresher — but not a full reset.'}},
-    {t:'Trade',d:'Ship out your most discontented skater for a clean 78.',f:()=>{
-      const all=[...S.lines,...S.pairs,S.bench];
-      let worst=null,loc=null;
-      all.forEach(arr=>arr.forEach((p,i)=>{if(p&&(!worst||p.discontent>worst.discontent)){worst=p;loc={arr,i}}}));
-      if(!worst)return 'Nobody to move.';
-      const repl=newPlayer(78,worst.isD,98); loc.arr[loc.i]=repl;
-      return `${worst.name} (${Math.round(worst.discontent)} discontent) shipped out for ${repl.name}, 78, expects ${(repl.isD?D_ROLE:F_ROLE)[repl.role]}.`}},
-  ];
-  const avail=pool.filter(o=>o.t!=='Scout'||S.bench.length<BENCH_CAP);
-  const picks=avail.sort(()=>rng()-.5).slice(0,3);
-  document.getElementById('opts').innerHTML=picks.map((o,i)=>
-    `<div class="opt" data-i="${i}"><b>${o.t}</b><span>${o.d}</span></div>`).join('');
-  document.querySelectorAll('.opt').forEach(el=>{
-    el.onclick=()=>{
-      S.lastMove=picks[+el.dataset.i].f();
-      document.getElementById('veil').classList.add('hide');
-      render();
-    };
+/* ============ THE BACKROOM — draft (pool) + shop (capacity) ============ */
+function showBetween(){
+  const m=document.getElementById('modal');
+  if(!S.draftOffer){
+    S.draftOffer=[0,1,2].map(k=>{ const isD=rng()<0.30; return newPlayer(Math.round(74+rng()*16),isD,120+k); });
+    S.drafted=false;
+  }
+  const shop=shopOptions();
+  const draftHtml = S.drafted
+    ? `<div class="done">✓ Signed for this cycle.</div>`
+    : S.draftOffer.map((p,i)=>`<div class="opt" data-draft="${i}"><b>${p.name} · ${p.rating}</b>`
+        +`<span>${p.isD?'DEFENCE':'FORWARD'} · ${p.trait} · expects ${(p.isD?D_ROLE:F_ROLE)[p.role]}</span></div>`).join('');
+  const shopHtml = shop.map((o,i)=>`<div class="opt${S.credits>=o.c?'':' off'}" data-shop="${i}">`
+      +`<b>${o.t}<em>${o.c}c</em></b><span>${o.d}</span></div>`).join('');
+  m.innerHTML=`<h3>The Backroom</h3>
+    <p>Credits <b style="color:var(--cold)">${S.credits}</b> · Triads ${S.openLines}/4 · Guard pairs ${S.openPairs}/3</p>
+    <div class="bsec"><div class="bh">Draft one — free · grows your pool</div><div class="opts">${draftHtml}</div></div>
+    <div class="bsec"><div class="bh">Shop — spend credits on capacity</div><div class="opts">${shopHtml}</div></div>
+    <button onclick="goLive()">Go live →</button>`;
+  document.querySelectorAll('[data-draft]').forEach(el=>el.onclick=()=>{
+    const p=S.draftOffer[+el.dataset.draft]; S.bench.push(p); autofillOpen();
+    S.drafted=true; S.lastMove=`Drafted ${p.name} (${p.rating}, expects ${(p.isD?D_ROLE:F_ROLE)[p.role]}).`;
+    showBetween();
+  });
+  document.querySelectorAll('[data-shop]').forEach(el=>el.onclick=()=>{
+    const o=shopOptions()[+el.dataset.shop]; if(!o||S.credits<o.c)return;
+    S.credits-=o.c; o.f(); S.lastMove=o.t+' — done.'; showBetween();
   });
 }
+function goLive(){ S.draftOffer=null; document.getElementById('veil').classList.add('hide'); render(); }
 
 newGame();
 </script>
