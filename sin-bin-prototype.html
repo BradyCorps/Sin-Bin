@@ -255,7 +255,7 @@ const COST_LINE=[6,9,12], COST_PAIR=[5,8], COST_ANCHOR=5;
 const F_EXPECT=[20,16,11,6], D_EXPECT=[24,19,13];
 
 /* ---- matchup lanes: you win lanes, not a total ---- */
-const LANE_BASE={vsStrike:424, vsGuard:610, vsDepth:166};  // opposing-lane strength at game 0 (retuned for the trait engine)
+const LANE_BASE={vsStrike:458, vsGuard:657, vsDepth:179};  // opposing-lane strength at game 0 (retuned for the cranked trait engine)
 const LANE_RAMP=0.033;                                      // difficulty ramp per game — cushion eaten by late rounds
 const LANE_SWING=75;                                        // per-lane variance — "outplayed even when better"
 const ANCHOR_K=700;                                         // goalie relief -> Guard-lane value
@@ -380,27 +380,31 @@ function isBoss(i){return i===9}
 /* ---- the roster engine: traits fire on placement / minutes / adjacency ---- */
 function lineEngine(u,mins,idx){
   const ps=u.filter(Boolean), hasPM=ps.some(p=>p.trait==='PLAYMAKER');
-  let mult=1, bonus=0;
-  const states=ps.map(p=>{ let state='—',note='';
+  let mult=1;                                        // pass 1: line-wide multiplier
+  if(hasPM&&mins>=16) mult*=1.20;                    // Playmaker running the line
+  if(ps.some(p=>p.trait==='GRINDER'&&idx>=2&&mins<=12)) mult*=1.18;   // depth line that knows its job
+  const primaP=ps.find(p=>p.trait==='PRIMA');
+  if(primaP){ if(mins>=18)mult*=1.25; else if(mins<14)mult*=0.70; }   // fed vs buried
+  if(ps.some(p=>p.trait==='ROVER')) mult*=1.10;
+  let output=0; const states=[];                     // pass 2: per player (penalties for mismatch)
+  ps.forEach(p=>{ let e=eff(p), pb=0, state='—', note='';
     if(p.trait==='PLAYMAKER'){ if(mins>=16){state='ACTIVE';note='running the line';} else {state='DORMANT';note='needs 16′ to run the line';} }
-    else if(p.trait==='SNIPER'){ if(hasPM){state='ACTIVE';note='finishing the Playmaker';} else {state='DORMANT';note='needs a Playmaker beside him';} }
-    else if(p.trait==='GRINDER'){ if(idx>=2&&mins<=12){state='ACTIVE';note='knows the job';} else {state='DORMANT';note='wasted up the lineup';} }
+    else if(p.trait==='SNIPER'){ if(hasPM){state='ACTIVE';note='finishing the Playmaker'; pb=26;} else {state='DORMANT';note='no setup — needs a Playmaker'; e*=0.85;} }
+    else if(p.trait==='GRINDER'){ if(idx>=2&&mins<=12){state='ACTIVE';note='knows the job';} else if(idx<2){state='DORMANT';note='wasted up top'; e*=0.90;} else {state='DORMANT';note='give him depth minutes';} }
     else if(p.trait==='ROVER'){ state='ACTIVE'; note='running hot'; }
     else if(p.trait==='PRIMA'){ if(mins>=18){state='THRIVING';note='the show';} else if(mins<14){state='SULKING';note='poisoning the line';} else {state='DORMANT';note='wants 18′';} }
-    return {id:p.id, trait:p.trait, state, note}; });
-  if(hasPM&&mins>=16) mult*=1.12;
-  const nSnipe=ps.filter(p=>p.trait==='SNIPER').length; if(hasPM&&nSnipe) bonus+=14*nSnipe;
-  if(states.some(s=>s.trait==='GRINDER'&&s.state==='ACTIVE')) mult*=1.12;
-  const prima=states.find(s=>s.trait==='PRIMA'); if(prima){ if(prima.state==='THRIVING')mult*=1.15; else if(prima.state==='SULKING')mult*=0.80; }
-  if(ps.some(p=>p.trait==='ROVER')) mult*=1.06;
-  return {output:(ps.reduce((a,p)=>a+eff(p),0)+bonus)*mult, states};
+    const eShown=(e+pb)*mult; output+=eShown;
+    states.push({id:p.id, trait:p.trait, state, note, eShown}); });
+  return {output, states};
 }
 function pairEngine(u,mins){
   const ps=u.filter(Boolean); let mult=1;
-  const states=ps.map(p=>({id:p.id, trait:p.trait, state:'ACTIVE',
-    note:p.trait==='WALL'?'walling the front':p.trait==='ANCHOR'?'shielding his partner':'holding the line'}));
-  if(ps.some(p=>p.trait==='WALL')) mult*=1.10;
-  return {output:ps.reduce((a,p)=>a+eff(p),0)*mult, states};
+  if(ps.some(p=>p.trait==='WALL')) mult*=1.15;
+  let output=0; const states=[];
+  ps.forEach(p=>{ const eShown=eff(p)*mult; output+=eShown;
+    states.push({id:p.id, trait:p.trait, state:'ACTIVE',
+      note:p.trait==='WALL'?'walling the front':p.trait==='ANCHOR'?'shielding his partner':'holding the line', eShown}); });
+  return {output, states};
 }
 function computeFx(){                       // stash each deployed player's engine state for the cards
   S._fx={};
@@ -420,8 +424,10 @@ function pEl(p,where,mins){
   const fx=S._fx&&S._fx[p.id];
   const fxCls=fx?((fx.state==='ACTIVE'||fx.state==='THRIVING')?'on':fx.state==='SULKING'?'sulk':'off'):'off';
   const fxLine=fx?`${fx.trait} · ${fx.state} — ${fx.note}`:(where==='bench'?`${p.trait} · in the Backroom`:p.trait);
+  const shown=fx&&fx.eShown!=null?Math.round(fx.eShown):Math.round(eff(p));
+  const rtgCol=fx&&fx.eShown!=null?(fx.eShown>p.rating+1?'var(--ok)':fx.eShown<p.rating-1?'var(--penalty)':''):'';
   return `<div class="p${sel}" data-where="${where}" data-id="${p.id}">
-    <div class="p-top"><span class="p-name">${p.name}</span><span class="p-rtg">${Math.round(eff(p))}</span></div>
+    <div class="p-top"><span class="p-name">${p.name}</span><span class="p-rtg" style="color:${rtgCol}">${shown}</span></div>
     <div class="p-meta"><span class="p-role${unhappy?' unhappy':''}">${tag}</span></div>
     <div class="fx ${fxCls}">${fxLine}</div>
     <div class="bars">
@@ -588,7 +594,7 @@ function applyFatigueThird(){
   const ap=(u,mins,ref,isD)=>{ const hasAnchor=isD&&u.some(p=>p&&p.trait==='ANCHOR');
     u.forEach(p=>{ if(!p)return; let fm=1;
       if(p.trait==='ROVER')fm*=1.25;                                 // runs hot
-      if(isD&&hasAnchor&&p.trait!=='ANCHOR')fm*=0.7;                  // Anchor shields his partner
+      if(isD&&hasAnchor&&p.trait!=='ANCHOR')fm*=0.6;                  // Anchor shields his partner
       p.fatigue=Math.max(0,Math.min(100,p.fatigue+((mins/ref)*FATIGUE_RATE*it.fat*fm*(1-rel)-recover())/PERIODS)); }); };
   S.lines.forEach((l,i)=>{ if(!l.some(p=>!p))ap(l,S.fMin[i],FREF,false); });
   S.pairs.forEach((p,i)=>{ if(!p.some(x=>!x))ap(p,S.dMin[i],DREF,true); });
