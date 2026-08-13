@@ -41,10 +41,10 @@ const templates = {
   forecheck: { name: "HIGH FORECHECK", hint: "Absorb it, outrun it, or spend Chain.", fail: "The first touch was stripped below the goal line.", threat: 27, passes: (s) => fit(s, 0) >= 5 || tags(s).has("grit") || s.chain >= 1.75 },
   collapse: { name: "SLOT COLLAPSE", hint: "Screen it, finish through it, or stabilize possession.", fail: "The shooting lane closed before the release.", threat: 26, passes: (s) => fit(s, 2) >= 6 || tags(s).has("screen") || tags(s).has("control") },
   long: { name: "LONG CHANGE", hint: "Fresh legs, Control, or a live bridge can survive.", fail: "Tired legs were caught above the puck.", threat: 32, passes: (s) => activeEnergy(s) >= 8 || tags(s).has("control") || s.lastBridge },
-  pin: { name: "BOARD PIN", hint: "Grit, a bridge, or enough stored Pressure can escape.", fail: "The cycle was sealed against the wall.", threat: 29, passes: (s) => tags(s).has("grit") || tags(s).has("bridge") || s.pressure >= 58 },
+  pin: { name: "BOARD PIN", hint: "Grit/Bridge in Recover, or enough stored Pressure can escape.", fail: "The cycle was sealed against the wall.", threat: 29, passes: (s) => hasTagAt(s, 0, "grit") || hasTagAt(s, 0, "bridge") || s.pressure >= 58 },
   match: { name: "HARD MATCH", hint: "Change shape, overcharge, or trust a hot Chain.", fail: "Fresh checkers smothered the unchanged unit.", threat: 34, passes: (s) => s.changedThisResolution || Boolean(s.sinBin) || s.chain >= 2.05 },
   rush: { name: "COUNTER RUSH", hint: "Control it, keep two fresh skaters, or race with Pressure.", fail: "The last skater was beaten in open ice.", threat: 38, passes: (s) => tags(s).has("control") || freshCount(s) >= 2 || s.pressure >= 70 },
-  chaos: { name: "CHAOS PUCK", hint: "Bridge the bounce, use Flex, or preserve a strong Chain.", fail: "A bad bounce severed the sequence.", threat: 35, passes: (s) => tags(s).has("bridge") || tags(s).has("flex") || s.chain >= 2.2 },
+  chaos: { name: "CHAOS PUCK", hint: "Bridge/Flex in Create, or preserve a strong Chain.", fail: "A bad bounce severed the sequence.", threat: 35, passes: (s) => hasTagAt(s, 1, "bridge") || hasTagAt(s, 1, "flex") || s.chain >= 2.2 },
   press: { name: "FINAL PRESS", hint: "Balanced fit, no empty tanks, or a Screen can hold.", fail: "The final wave died before the horn.", threat: 43, passes: (s) => (fit(s, 0) + fit(s, 1) + fit(s, 2) >= 14 && noGassed(s)) || tags(s).has("screen") },
 };
 
@@ -83,6 +83,7 @@ export function moveBenchSkater(lineup, index, direction) {
 function roster(state) { return PLAYERS[state.conditions.roster]; }
 function player(state, id) { return roster(state)[id]; }
 function tags(state) { return new Set(state.active.flatMap((id) => id ? player(state, id).tags : [])); }
+function hasTagAt(state, slot, tag) { const id = state.active[slot]; return Boolean(id && player(state, id).tags.includes(tag)); }
 function fit(state, slot) { const id = state.active[slot]; if (!id) return 0; const p = player(state, id); return p.fit[slot] * (0.45 + 0.55 * state.energy[id] / p.energy); }
 function activeEnergy(state) { return state.active.reduce((n, id) => n + (id ? state.energy[id] : 0), 0); }
 function freshCount(state) { return state.active.filter((id) => id && state.energy[id] / player(state, id).energy >= 0.6).length; }
@@ -176,11 +177,12 @@ export function resolve(state) {
   const passed = disruption.passes(next); const fits = [fit(next, 0), fit(next, 1), fit(next, 2)]; const complete = fits.every((v) => v >= 4);
   let output = Math.round(fits.reduce((a, b) => a + b, 0) * (0.8 + next.chain * 0.25));
   if (complete) output += 7;
-  if (next.conditions.roster === "relay") { if (next.lastBridge) output += 8; output = Math.round(output * 0.94); }
+  if (next.conditions.roster === "relay") { if (next.lastBridge) output += 3; output = Math.round(output * 0.86); }
   else { const charged = next.active.filter((id) => id && player(next, id).tags.includes("charge") && next.energy[id] > 0).length; const chargeOnline = next.chain >= 1.55; if (chargeOnline) output += charged * 7; if (charged >= 2 && chargeOnline) { output += 10; record(next, "overload", `Charged pair detonated through a preserved Chain: +${charged * 7 + 10} output before fatigue.`); } }
   if (next.sinBin) output = Math.round(output * 0.64);
-  if (passed) { scorePressure(next, output + 4); next.threat = Math.max(0, next.threat - 4); next.chain = clamp(next.chain + 0.16, 1, 4.5); record(next, "resolution", `${disruption.name} survived by the current machine: +${output + 4} Pressure.`); }
-  else { const danger = Math.round(disruption.threat * (next.sinBin ? 1.5 : 1)); next.pressure = Math.max(0, next.pressure - 18); next.chain = 1; next.stats.chainBreaks += 1; scoreThreat(next, danger, disruption.fail); record(next, "failure", `${disruption.fail} No Pressure generated; −18 Pressure, +${danger} Threat; Chain reset to ×1.00.`, { cause: disruption.fail, disruption: disruption.name, threat: danger }); }
+  if (next.dumpedThisResolution) { scoreThreat(next, 12, "The dumped puck let the opponent regroup."); next.chain = 1; record(next, "dump-resolution", "Full Change surrendered this scoring attempt; opponent regroup +12 Threat."); }
+  else if (passed) { scorePressure(next, output + 4); next.threat = Math.max(0, next.threat - 4); next.chain = clamp(next.chain + 0.16, 1, 4.5); record(next, "resolution", `${disruption.name} survived by the current machine: +${output + 4} Pressure.`); }
+  else { const danger = Math.round(disruption.threat * (next.sinBin ? 1.7 : 1.25)); next.pressure = Math.max(0, next.pressure - 22); next.chain = 1; next.stats.chainBreaks += 1; scoreThreat(next, danger, disruption.fail); record(next, "failure", `${disruption.fail} No Pressure generated; −22 Pressure, +${danger} Threat; Chain reset to ×1.00.`, { cause: disruption.fail, disruption: disruption.name, threat: danger }); }
   for (const id of next.active) if (id) { const before = next.energy[id]; next.energy[id] = Math.max(0, before - 1); if (before === 0) { const cause = `${player(next, id).name} stayed active with no Energy and lost the next link.`; next.pressure = Math.max(0, next.pressure - 8); next.stats.fatigueFailures += 1; scoreThreat(next, 14, cause); record(next, "fatigue", `${cause} −8 Pressure, +14 Threat.`, { cause, skater: id }); } }
   for (const id of next.bench) next.energy[id] = Math.min(player(next, id).energy, next.energy[id] + 1);
   if (next.sinBin) { next.sinBin.remaining -= 1; if (next.sinBin.remaining === 0) { const { id, slot, conceded } = next.sinBin; const p = player(next, id); next.active[slot] = id; next.energy[id] = p.energy; const value = conceded ? Math.round(p.returned / 2) : p.returned; next.sinBin = null; next.stats.returns += 1; if (!conceded) next.stats.survived += 1; next.chain = conceded ? 1 : clamp(next.chain + 0.5, 1, 4.5); scorePressure(next, value); record(next, "return", `${p.name} returned after exactly ${PENALTY_RESOLUTIONS} resolutions: +${value} Pressure; ${conceded ? "concession halved the trigger" : "shorthanded interval survived"}.`, { skater: id, survived: !conceded, value }); } }
@@ -192,17 +194,23 @@ export function resolve(state) {
 export function advanceClock(state, elapsed) { if (state.phase !== "running") return state; const next = copy(state); next.pressure = Math.max(0, next.pressure - elapsed / 1000 * (next.sinBin ? 1.8 : 0.9)); next.clockMs -= elapsed; return next.clockMs <= 0 ? resolve(next) : next; }
 
 export function diagnosis(state) {
-  const count = (type) => state.events.filter((event) => event.type === type).length;
-  const disruptionFailures = count("failure");
-  const substitutionBreaks = count("chain-break");
-  const fatigueFailures = count("fatigue");
-  const finalCause = state.events.filter((event) => ["failure", "fatigue", "chain-break"].includes(event.type)).at(-1)?.text;
+  const summary = diagnosisSummary(state);
   return [
     `${state.stats.substitutions} substitutions; ${state.stats.bridges} possession bridges.`,
-    `${disruptionFailures} disruption failures; ${substitutionBreaks} unsupported substitution breaks; ${fatigueFailures} fatigue failures.`,
+    summary.failures,
     `${state.stats.dumps} dumps surrendered ${state.stats.surrendered} Pressure.`,
     `${state.stats.penalties} penalties; ${state.stats.survived} shorthanded intervals survived; ${state.stats.returns} return triggers.`,
-    ...(state.conditions.recruitId ? [`Recruited ${player(state, state.conditions.recruitId).name}: ${state.conditions.recruitStarted ? "started on ice" : "started on bench"}; ${state.stats.recruitEntries} live substitution entries; ${state.stats.recruitResolutions} resolutions played.`] : []),
-    finalCause ? `Last broken link: ${finalCause}` : "No broken link recorded.",
+    ...(summary.recruitDeployment ? [summary.recruitDeployment] : []),
+    summary.lastBrokenLink,
   ];
+}
+
+export function diagnosisSummary(state) {
+  const count = (type) => state.events.filter((event) => event.type === type).length;
+  const finalCause = state.events.filter((event) => ["failure", "fatigue", "chain-break"].includes(event.type)).at(-1)?.text;
+  return {
+    failures: `${count("failure")} disruption failures; ${count("chain-break")} unsupported substitution breaks; ${count("fatigue")} fatigue failures.`,
+    lastBrokenLink: finalCause ? `Last broken link: ${finalCause}` : "No broken link recorded.",
+    recruitDeployment: state.conditions.recruitId ? `Recruited ${player(state, state.conditions.recruitId).name}: ${state.conditions.recruitStarted ? "started on ice" : "started on bench"}; ${state.stats.recruitEntries} live substitution entries; ${state.stats.recruitResolutions} resolutions played.` : null,
+  };
 }

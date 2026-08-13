@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   CADENCES, PENALTY_RESOLUTIONS, PLAYERS, RECRUIT_OFFERS, SEQUENCES,
-  advanceClock, createGame, diagnosis, dumpAndChange, getDisruption,
+  advanceClock, createGame, diagnosis, diagnosisSummary, dumpAndChange, getDisruption,
   initialLineup, moveBenchSkater, recruitIntoLineup, resolve, selectSlot,
   startGame, substitute, takePenalty,
 } from "../app/game-engine.mjs";
@@ -147,6 +147,32 @@ function freshnessPolicy(roster, sequence) {
   return state.outcome.result;
 }
 
+function supportedFreshnessPolicy(roster, sequence, lineup = initialLineup(roster)) {
+  let state = running({ roster, sequence, cadence: "control", lineup });
+  while (state.phase === "running") {
+    const activeSlots = state.active.map((id, slot) => ({ id, slot })).filter(({ id }) => id);
+    const orderedSlots = activeSlots.sort((a, b) => state.energy[a.id] / PLAYERS[roster][a.id].energy - state.energy[b.id] / PLAYERS[roster][b.id].energy);
+    let changed = false;
+    for (const { id: outgoingId, slot } of orderedSlots) {
+      const outgoing = PLAYERS[roster][outgoingId];
+      const supported = state.bench.map((id, index) => ({ id, index })).filter(({ id }) => {
+        const incoming = PLAYERS[roster][id];
+        return incoming.fit[slot] >= 5 || incoming.tags.includes("bridge") || incoming.tags.includes("flex") || outgoing.tags.includes("handoff");
+      }).sort((a, b) => state.energy[b.id] / PLAYERS[roster][b.id].energy - state.energy[a.id] / PLAYERS[roster][a.id].energy);
+      if (supported.length) { state = selectSlot(state, slot); state = substitute(state, supported[0].index); changed = true; break; }
+    }
+    state = resolve(state);
+    if (!changed && state.phase !== "running") break;
+  }
+  return state.outcome.result;
+}
+
+function fullChangePolicy(roster, sequence) {
+  let state = running({ roster, sequence, cadence: "control" });
+  while (state.phase === "running") { state = dumpAndChange(state); state = resolve(state); }
+  return state.outcome.result;
+}
+
 function penaltyFirstPolicy(roster, sequence) {
   let state = running({ roster, sequence, cadence: "control" });
   while (state.phase === "running") {
@@ -165,6 +191,35 @@ test("generic freshness and penalty-first policies do not sweep every condition"
   const penaltyWins = conditions.filter(([roster, sequence]) => penaltyFirstPolicy(roster, sequence) === "win").length;
   assert.ok(freshnessWins < conditions.length, `freshness won ${freshnessWins}/${conditions.length}`);
   assert.ok(penaltyWins < conditions.length, `penalty-first won ${penaltyWins}/${conditions.length}`);
+});
+
+test("supported freshness policy does not sweep conditions or recruit matrices", () => {
+  const conditions = Object.keys(PLAYERS).flatMap((roster) => Object.keys(SEQUENCES).map((sequence) => [roster, sequence]));
+  const wins = conditions.filter(([roster, sequence]) => supportedFreshnessPolicy(roster, sequence) === "win").length;
+  assert.ok(wins < conditions.length, `supported freshness won ${wins}/${conditions.length}`);
+  for (const roster of Object.keys(PLAYERS)) {
+    const original = initialLineup(roster); const results = new Set();
+    for (const recruit of RECRUIT_OFFERS.flat()) for (const released of [...original.active, ...original.bench]) {
+      results.add(supportedFreshnessPolicy(roster, "static", recruitIntoLineup(original, released, recruit)));
+    }
+    assert.deepEqual([...results].sort(), ["loss", "tie", "win"], `${roster} matrix outcomes`);
+  }
+});
+
+test("every-resolution Full Change policy has no wins and at least one loss", () => {
+  const results = Object.keys(PLAYERS).flatMap((roster) => Object.keys(SEQUENCES).map((sequence) => fullChangePolicy(roster, sequence)));
+  assert.equal(results.filter((result) => result === "win").length, 0, results.join(","));
+  assert.ok(results.includes("loss"), results.join(","));
+});
+
+test("recruitment diagnosis exposes named failure totals, last link and deployment", () => {
+  const lineup = recruitIntoLineup(initialLineup("relay"), "inez", "ada");
+  const state = running({ roster: "relay", sequence: "vice", lineup, recruitId: "ada" });
+  state.events.push({ type: "failure", text: "Failed disruption." }, { type: "chain-break", text: "Broken change." }, { type: "fatigue", text: "Gassed." });
+  const summary = diagnosisSummary(state);
+  assert.equal(summary.failures, "1 disruption failures; 1 unsupported substitution breaks; 1 fatigue failures.");
+  assert.equal(summary.lastBrokenLink, "Last broken link: Gassed.");
+  assert.match(summary.recruitDeployment, /Recruited ADA:/);
 });
 
 test("recruit and release choices change outcomes under identical generic decisions", () => {

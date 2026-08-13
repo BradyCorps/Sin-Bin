@@ -631,6 +631,20 @@ This does not establish broad-player appeal. Intentional penalties remained unus
 
 No recruits, progression, economy, art, or additional management systems were added. LSL-3B does not yet establish a stabilized baseline.
 
+### Stabilization revision after external review
+
+The first 3B checkpoint fixed invalid lineups and cadence bypasses but did not pass stabilization: supported freshness still dominated recruit matrices, repeated Full Change was undefeated, and recruitment hid aggregate failure counts.
+
+This revision remains awaiting human validation and makes only narrow rule changes:
+
+- Board Pin now requires Grit or Bridge in Recover, or sufficient stored Pressure; Chaos Puck requires Bridge or Flex in Create, or a preserved Chain. Both retain multiple responses while making lineup position matter.
+- A failed disruption produces no Pressure, resets Chain, and carries a larger explicit Pressure/Threat consequence.
+- Relay retains quick Chain growth but receives less automatic bridge output; Overload detonation still requires a preserved Chain.
+- A Full Change resolution surrenders its scoring attempt and gives the opponent regrouping Threat. It remains useful as an emergency reset, but repeating it is no longer an undefeated policy.
+- Recruitment uses a named diagnostic summary that always exposes disruption failures, unsupported substitution breaks, fatigue failures, the last broken link, and recruit deployment when applicable.
+
+Automated policy gates now require supported freshness not to sweep all roster/sequence conditions, wins/ties/losses in both recruit/release matrices, and zero wins plus at least one loss for every-resolution Full Change. Passing these automated gates does not select 3B as a baseline; human stabilization play remains required.
+
 ---
 
 ## Result-entry template
