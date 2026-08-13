@@ -365,6 +365,19 @@ Exclude currency, shops, permanent stat upgrades, randomized paid acquisition, a
 
 No behavioural result is claimed. LSL-3 is awaiting human playtesting.
 
+### Playtest-driven revision
+
+The second internal playtest showed recruitment following diagnosed mechanical needs: Briar was selected for pressure absorption and Dove for flexible two-way coverage. Because this prototype has no aggregate player ratings, this is evidence of need-driven selection only; no rating tradeoff was tested.
+
+The same playtest exposed four implementation gaps now revised for another controlled run:
+
+- Release candidates show Energy capacity, lane fits, and effects.
+- Recruitment explicitly compares the gained and lost mechanical package before confirmation.
+- Results distinguish wins, ties, and losses; Pressure is no longer a hidden tiebreaker in the displayed outcome.
+- Later diagnoses record the recruited skater's live entries and resolutions played, while the campaign summary preserves recruit and release choices.
+
+LSL-3 remains awaiting human playtesting after this revision. These changes do not establish a pass or select the branch as a future baseline.
+
 ---
 
 ## Result-entry template

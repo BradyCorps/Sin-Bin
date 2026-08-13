@@ -73,3 +73,21 @@ test("bench ordering is explicit, deterministic and boundary safe", () => {
   assert.deepEqual(moved.bench, ["halley", "orla", "nyx"]);
   assert.deepEqual(lineup.bench, ["halley", "nyx", "orla"]);
 });
+
+test("tied goals resolve as a tie without a hidden Pressure tiebreaker", () => {
+  let state = running({ roster: "relay", sequence: "vice" });
+  state.resolution = 11; state.goalsFor = 1; state.goalsAgainst = 1; state.pressure = 40; state.threat = 3;
+  state = resolve(state);
+  assert.equal(state.goalsFor, 1); assert.equal(state.goalsAgainst, 1);
+  assert.equal(state.outcome.result, "tie"); assert.equal(state.outcome.won, false);
+});
+
+test("recruit impact counts live entry and resolutions actually played", () => {
+  const lineup = recruitIntoLineup(initialLineup("relay"), "inez", "ada");
+  let state = running({ roster: "relay", sequence: "vice", lineup, recruitId: "ada" });
+  state = selectSlot(state, 0); state = substitute(state, 0);
+  assert.equal(state.stats.recruitEntries, 1);
+  state = resolve(state);
+  assert.equal(state.stats.recruitResolutions, 1);
+  assert.ok(diagnosis(state).some((line) => line.includes("ADA: 1 live entries, 1 resolutions played")));
+});

@@ -97,7 +97,7 @@ export function getDisruption(state) {
 }
 
 export function createGame(conditions = {}) {
-  const selected = { roster: conditions.roster ?? "relay", sequence: conditions.sequence ?? "vice", cadence: conditions.cadence ?? "control", seed: conditions.seed ?? 2, lineup: structuredClone(conditions.lineup ?? starts[conditions.roster ?? "relay"]) };
+  const selected = { roster: conditions.roster ?? "relay", sequence: conditions.sequence ?? "vice", cadence: conditions.cadence ?? "control", seed: conditions.seed ?? 2, lineup: structuredClone(conditions.lineup ?? starts[conditions.roster ?? "relay"]), recruitId: conditions.recruitId ?? null };
   const lineup = selected.lineup;
   const available = PLAYERS[selected.roster];
   return {
@@ -105,7 +105,7 @@ export function createGame(conditions = {}) {
     energy: Object.fromEntries(Object.entries(available).map(([id, p]) => [id, p.energy])), pressure: 18, threat: 0, chain: 1, maxChain: 1,
     selectedSlot: null, sinBin: null, penaltiesUsed: [], changedThisResolution: false, lastBridge: false, goalsFor: 0, goalsAgainst: 0,
     feed: [`${SEQUENCES[selected.sequence].name}: ${SEQUENCES[selected.sequence].description}`], events: [], outcome: null,
-    stats: { substitutions: 0, bridges: 0, chainBreaks: 0, fatigueFailures: 0, dumps: 0, surrendered: 0, penalties: 0, survived: 0, returns: 0 },
+    stats: { substitutions: 0, bridges: 0, chainBreaks: 0, fatigueFailures: 0, dumps: 0, surrendered: 0, penalties: 0, survived: 0, returns: 0, recruitEntries: 0, recruitResolutions: 0 },
   };
 }
 
@@ -121,6 +121,7 @@ export function substitute(state, benchIndex) {
   const natural = incoming.fit[slot] >= 5; const kept = natural || bridge;
   next.active[slot] = incomingId; next.bench[benchIndex] = outgoingId; next.selectedSlot = null; next.changedThisResolution = true; next.lastBridge = bridge;
   next.stats.substitutions += 1;
+  if (incomingId === next.conditions.recruitId) next.stats.recruitEntries += 1;
   if (kept) {
     if (bridge) next.stats.bridges += 1;
     const relayGain = next.conditions.roster === "relay" ? 0.28 : 0.1;
@@ -158,6 +159,7 @@ function scoreThreat(next, amount, cause) { next.threat += amount; while (next.t
 
 export function resolve(state) {
   if (state.phase !== "running") return state; const next = copy(state); const disruption = getDisruption(next); next.resolution += 1;
+  if (next.conditions.recruitId && next.active.includes(next.conditions.recruitId)) next.stats.recruitResolutions += 1;
   const passed = disruption.passes(next); const fits = [fit(next, 0), fit(next, 1), fit(next, 2)]; const complete = fits.every((v) => v >= 4);
   let output = Math.round(fits.reduce((a, b) => a + b, 0) * (0.8 + next.chain * 0.25));
   if (complete) output += 7;
@@ -170,7 +172,7 @@ export function resolve(state) {
   for (const id of next.bench) next.energy[id] = Math.min(player(next, id).energy, next.energy[id] + 1);
   if (next.sinBin) { next.sinBin.remaining -= 1; if (next.sinBin.remaining === 0) { const { id, slot, conceded } = next.sinBin; const p = player(next, id); next.active[slot] = id; next.energy[id] = p.energy; const value = conceded ? Math.round(p.returned / 2) : p.returned; next.sinBin = null; next.stats.returns += 1; if (!conceded) next.stats.survived += 1; next.chain = conceded ? 1 : clamp(next.chain + 0.5, 1, 4.5); scorePressure(next, value); record(next, "return", `${p.name} returned after exactly ${PENALTY_RESOLUTIONS} resolutions: +${value} Pressure; ${conceded ? "concession halved the trigger" : "shorthanded interval survived"}.`, { skater: id, survived: !conceded, value }); } }
   next.changedThisResolution = false; next.lastBridge = false; next.selectedSlot = null; next.maxChain = Math.max(next.maxChain, next.chain); next.clockMs = CADENCES[next.conditions.cadence];
-  if (next.resolution >= RUN_RESOLUTIONS || next.goalsFor >= 3 || next.goalsAgainst >= 3) { next.phase = "ended"; next.outcome = { won: next.goalsFor > next.goalsAgainst || (next.goalsFor === next.goalsAgainst && next.pressure >= next.threat), explanation: next.events.filter((e) => e.type === "failure" || e.type === "fatigue" || e.type === "chain-break").at(-1)?.text ?? "The machine reached the horn without a broken link." }; record(next, "end", `Run ended ${next.goalsFor}–${next.goalsAgainst}; Pressure ${Math.round(next.pressure)}, Threat ${Math.round(next.threat)}.`); }
+  if (next.resolution >= RUN_RESOLUTIONS || next.goalsFor >= 3 || next.goalsAgainst >= 3) { const result = next.goalsFor > next.goalsAgainst ? "win" : next.goalsFor < next.goalsAgainst ? "loss" : "tie"; next.phase = "ended"; next.outcome = { result, won: result === "win", explanation: next.events.filter((e) => e.type === "failure" || e.type === "fatigue" || e.type === "chain-break").at(-1)?.text ?? "The machine reached the horn without a broken link." }; record(next, "end", `Run ended ${result}: ${next.goalsFor}–${next.goalsAgainst}; Pressure ${Math.round(next.pressure)}, Threat ${Math.round(next.threat)}.`); }
   return next;
 }
 
@@ -183,6 +185,7 @@ export function diagnosis(state) {
     `${state.stats.chainBreaks} chain breaks; ${state.stats.fatigueFailures} fatigue failures.`,
     `${state.stats.dumps} dumps surrendered ${state.stats.surrendered} Pressure.`,
     `${state.stats.penalties} penalties; ${state.stats.survived} shorthanded intervals survived; ${state.stats.returns} return triggers.`,
+    ...(state.conditions.recruitId ? [`Recruited ${player(state, state.conditions.recruitId).name}: ${state.stats.recruitEntries} live entries, ${state.stats.recruitResolutions} resolutions played.`] : []),
     `${count("failure")} disruption failures. ${state.outcome?.explanation ?? "No final failure cause."}`,
   ];
 }

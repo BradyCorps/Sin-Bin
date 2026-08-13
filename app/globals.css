@@ -1152,6 +1152,13 @@ footer {
 .release-grid button { padding: 8px 4px; border: 1px solid var(--line); background: #101e24; color: var(--paper); cursor: pointer; }
 .release-grid strong, .release-grid small { display: block; }
 .release-grid small { margin-top: 3px; color: var(--muted); font-size: 8px; }
+.tradeoff { display: grid; grid-template-columns: 1fr 34px 1fr; align-items: center; gap: 8px; margin: 0 0 16px; text-align: left; }
+.tradeoff > div { min-height: 65px; padding: 9px; border: 1px solid var(--line); background: #101e24; }
+.tradeoff > b { color: var(--yellow); text-align: center; }
+.tradeoff span, .tradeoff strong, .tradeoff small { display: block; }
+.tradeoff span { color: var(--yellow); font-family: var(--font-geist-mono), monospace; font-size: 8px; font-weight: 900; }
+.tradeoff strong { margin: 4px 0; }
+.tradeoff small { color: var(--muted); }
 .bench-order { display: grid; gap: 5px; margin-bottom: 16px; }
 .bench-order > div { display: grid; grid-template-columns: 30px 1fr 36px 36px; align-items: center; gap: 6px; padding: 6px; border: 1px solid var(--line); text-align: left; }
 .bench-order span strong, .bench-order span small { display: block; }
@@ -1167,6 +1174,8 @@ footer {
   .campaign-ribbon { grid-template-columns: 1fr; }
   .recruit-grid { grid-template-columns: 1fr; }
   .release-grid { grid-template-columns: repeat(3, 1fr); }
+  .tradeoff { grid-template-columns: 1fr; }
+  .tradeoff > b { transform: rotate(90deg); }
 }
 
 @media (max-width: 1180px) {
