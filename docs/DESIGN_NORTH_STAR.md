@@ -2,7 +2,7 @@
 
 **Status:** Mechanical discovery validated by the creator; broader validation pending  
 **Control:** `control/live-shift-lab-v1` at `11bc77dadc19bf319b96632464e4e29935eb6fd7`  
-**Current experiment:** `experiment/live-shift-lab-2a`
+**Current experiment:** `experiment/live-shift-lab-3`
 
 ## The game in one sentence
 

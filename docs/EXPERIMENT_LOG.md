@@ -42,7 +42,8 @@ identified that I needed to hold off opponent pressure that was at 91, put in gr
 | ID | Branch | Question | Status | Decision |
 |---|---|---|---|---|
 | LSL-1 | `control/live-shift-lab-v1` | Is rewiring a hockey line while its scoring play remains alive inherently fun? | Completed internally | Passed as the immutable control |
-| LSL-2A | `experiment/live-shift-lab-2a` | Does the hook support different machines, planning, and repeatable depth? | Implemented; awaiting human playtesting | Pending human evidence |
+| LSL-2A | `experiment/live-shift-lab-2a` | Does the hook support different machines, planning, and repeatable depth? | Completed internally | Proceed to narrow recruitment test |
+| LSL-3 | `experiment/live-shift-lab-3` | Does a diagnosed failure create a natural motive to recruit a missing component? | Implemented; awaiting human playtesting | Pending human evidence |
 
 ---
 
@@ -213,6 +214,31 @@ Planned shape:
 6. Repeat for three games.
 
 Exclude currency, shops, permanent stat upgrades, randomized paid acquisition, and win-gated access to recovery.
+
+---
+
+## LSL-3 — Missing component
+
+**Branch:** `experiment/live-shift-lab-3`
+**Status:** Implemented; awaiting human playtesting
+
+### Primary question
+
+> Does a causal game diagnosis make the player choose a face-up specialist to repair a felt roster weakness, then deliberately operate the changed machine differently?
+
+### Changed variable
+
+- A three-game sequence with one face-up recruit choice after games one and two.
+- Each recruit choice offers a possession bridge, stabilizer, or volatile specialist rather than ranked power.
+- The player releases one current skater and explicitly orders the bench before the next fixed opponent sequence.
+
+### Controlled variables
+
+- The selected Relay or Overload machine and five- or eight-second cadence persist for all three games.
+- Each game preserves the 2A live-rewire rules, deterministic opponent script, rectangle presentation, and causal diagnosis.
+- No currency, shop, rarity, upgrades, recovery economy, unlocks, or character presentation are present.
+
+No behavioural result is claimed. LSL-3 is awaiting human playtesting.
 
 ---
 

@@ -2,6 +2,20 @@ export const CADENCES = { control: 5000, slow: 8000 };
 export const RUN_RESOLUTIONS = 12;
 export const PENALTY_RESOLUTIONS = 2;
 
+const sharedRecruits = {
+  ada: { name: "ADA", role: "Outlet", fit: [4, 4, 3], energy: 6, tags: ["bridge", "handoff"], color: "#8fd0bd", penalty: 15, returned: 13 },
+  briar: { name: "BRIAR", role: "Shield", fit: [5, 5, 2], energy: 6, tags: ["control", "grit"], color: "#72a99a", penalty: 13, returned: 11 },
+  cato: { name: "CATO", role: "Cannon", fit: [1, 5, 9], energy: 2, tags: ["charge", "burst", "finish"], color: "#ef806f", penalty: 41, returned: 29 },
+  dove: { name: "DOVE", role: "Pivot", fit: [3, 5, 4], energy: 5, tags: ["bridge", "flex"], color: "#aaa0e4", penalty: 18, returned: 15 },
+  echo: { name: "ECHO", role: "Cover", fit: [6, 4, 2], energy: 5, tags: ["control", "screen"], color: "#76b6c5", penalty: 16, returned: 14 },
+  fox: { name: "FOX", role: "Gambler", fit: [3, 8, 7], energy: 2, tags: ["charge", "shot"], color: "#e9ba59", penalty: 37, returned: 27 },
+};
+
+export const RECRUIT_OFFERS = [
+  ["ada", "briar", "cato"],
+  ["dove", "echo", "fox"],
+];
+
 export const PLAYERS = {
   relay: {
     vale: { name: "VALE", role: "Retriever", fit: [8, 2, 1], energy: 4, tags: ["recover", "handoff"], color: "#75c8d8", penalty: 20, returned: 14 },
@@ -10,6 +24,7 @@ export const PLAYERS = {
     inez: { name: "INEZ", role: "Bridge", fit: [5, 3, 3], energy: 6, tags: ["bridge", "grit"], color: "#9acb89", penalty: 16, returned: 12 },
     kestrel: { name: "KESTREL", role: "Rover", fit: [4, 5, 4], energy: 5, tags: ["bridge", "flex"], color: "#b89be8", penalty: 18, returned: 14 },
     june: { name: "JUNE", role: "Screen", fit: [2, 3, 6], energy: 5, tags: ["bridge", "screen"], color: "#ed9b62", penalty: 21, returned: 16 },
+    ...sharedRecruits,
   },
   overload: {
     rook: { name: "ROOK", role: "Breaker", fit: [9, 2, 1], energy: 3, tags: ["recover", "charge"], color: "#70bad0", penalty: 30, returned: 20 },
@@ -18,6 +33,7 @@ export const PLAYERS = {
     halley: { name: "HALLEY", role: "Anchor", fit: [5, 6, 2], energy: 6, tags: ["control", "handoff"], color: "#6eb7a0", penalty: 14, returned: 12 },
     nyx: { name: "NYX", role: "Fuse", fit: [3, 7, 5], energy: 4, tags: ["charge", "flex"], color: "#bd92e0", penalty: 27, returned: 22 },
     orla: { name: "ORLA", role: "Netfront", fit: [2, 2, 7], energy: 5, tags: ["screen", "grit"], color: "#e48e62", penalty: 23, returned: 18 },
+    ...sharedRecruits,
   },
 };
 
@@ -43,6 +59,27 @@ const starts = {
   overload: { active: ["rook", "lux", "sabine"], bench: ["halley", "nyx", "orla"] },
 };
 
+export function initialLineup(rosterId) { return structuredClone(starts[rosterId]); }
+
+export function recruitIntoLineup(lineup, outgoingId, incomingId) {
+  if (!RECRUIT_OFFERS.flat().includes(incomingId)) return lineup;
+  const next = structuredClone(lineup);
+  const activeIndex = next.active.indexOf(outgoingId);
+  const benchIndex = next.bench.indexOf(outgoingId);
+  if (activeIndex >= 0) next.active[activeIndex] = incomingId;
+  else if (benchIndex >= 0) next.bench[benchIndex] = incomingId;
+  else return lineup;
+  return next;
+}
+
+export function moveBenchSkater(lineup, index, direction) {
+  const target = index + direction;
+  if (index < 0 || target < 0 || target >= lineup.bench.length) return lineup;
+  const next = structuredClone(lineup);
+  [next.bench[index], next.bench[target]] = [next.bench[target], next.bench[index]];
+  return next;
+}
+
 function roster(state) { return PLAYERS[state.conditions.roster]; }
 function player(state, id) { return roster(state)[id]; }
 function tags(state) { return new Set(state.active.flatMap((id) => id ? player(state, id).tags : [])); }
@@ -60,8 +97,8 @@ export function getDisruption(state) {
 }
 
 export function createGame(conditions = {}) {
-  const selected = { roster: conditions.roster ?? "relay", sequence: conditions.sequence ?? "vice", cadence: conditions.cadence ?? "control", seed: conditions.seed ?? 2 };
-  const lineup = starts[selected.roster];
+  const selected = { roster: conditions.roster ?? "relay", sequence: conditions.sequence ?? "vice", cadence: conditions.cadence ?? "control", seed: conditions.seed ?? 2, lineup: structuredClone(conditions.lineup ?? starts[conditions.roster ?? "relay"]) };
+  const lineup = selected.lineup;
   const available = PLAYERS[selected.roster];
   return {
     phase: "ready", conditions: selected, resolution: 0, clockMs: CADENCES[selected.cadence], active: [...lineup.active], bench: [...lineup.bench],

@@ -2,7 +2,8 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   CADENCES, PENALTY_RESOLUTIONS, advanceClock, createGame, diagnosis,
-  getDisruption, resolve, selectSlot, startGame, substitute, takePenalty,
+  getDisruption, initialLineup, moveBenchSkater, recruitIntoLineup, resolve,
+  selectSlot, startGame, substitute, takePenalty,
 } from "../app/game-engine.mjs";
 
 function running(conditions) { return startGame(createGame(conditions)); }
@@ -54,4 +55,21 @@ test("all gameplay inputs are rejected after a run ends", () => {
   const ended = running({ roster: "relay" }); ended.phase = "ended";
   assert.equal(selectSlot(ended, 0), ended); assert.equal(substitute(ended, 0), ended); assert.equal(takePenalty(ended), ended);
   assert.equal(resolve(ended), ended); assert.equal(advanceClock(ended, 9999), ended);
+});
+
+test("recruitment replaces exactly one skater and persists into a clean next game", () => {
+  const original = initialLineup("relay");
+  const recruited = recruitIntoLineup(original, "inez", "ada");
+  assert.deepEqual(original, { active: ["vale", "marlow", "vera"], bench: ["inez", "kestrel", "june"] });
+  assert.deepEqual(recruited, { active: ["vale", "marlow", "vera"], bench: ["ada", "kestrel", "june"] });
+  const nextGame = createGame({ roster: "relay", sequence: "chase", cadence: "control", seed: 4, lineup: recruited });
+  assert.deepEqual(nextGame.bench, recruited.bench); assert.equal(nextGame.energy.ada, 6); assert.equal(nextGame.resolution, 0);
+});
+
+test("bench ordering is explicit, deterministic and boundary safe", () => {
+  const lineup = initialLineup("overload");
+  assert.equal(moveBenchSkater(lineup, 0, -1), lineup);
+  const moved = moveBenchSkater(lineup, 2, -1);
+  assert.deepEqual(moved.bench, ["halley", "orla", "nyx"]);
+  assert.deepEqual(lineup.bench, ["halley", "nyx", "orla"]);
 });
