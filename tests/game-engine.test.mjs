@@ -137,6 +137,43 @@ test("Full Change is limited to once per resolution", () => {
   assert.notEqual(dumpAndChange(afterResolution), afterResolution);
 });
 
+test("one mutually exclusive line decision is accepted per resolution window", () => {
+  const initial = running({ roster: "relay", sequence: "vice" });
+  let substituted = selectSlot(initial, 0); substituted = substitute(substituted, 0);
+  const snapshot = structuredClone(substituted);
+  assert.equal(substituted.windowDecision, "substitution");
+  assert.equal(substitute(selectSlot(substituted, 1), 1), substituted);
+  assert.equal(dumpAndChange(substituted), substituted);
+  assert.equal(takePenalty(selectSlot(substituted, 1)), substituted);
+  assert.deepEqual(substituted, snapshot);
+
+  let dumped = dumpAndChange(initial);
+  assert.equal(dumped.windowDecision, "dump");
+  assert.equal(substitute(selectSlot(dumped, 0), 0), dumped);
+  assert.equal(takePenalty(selectSlot(dumped, 0)), dumped);
+
+  let penalized = selectSlot(initial, 0); penalized = takePenalty(penalized);
+  assert.equal(penalized.windowDecision, "penalty");
+  assert.equal(dumpAndChange(penalized), penalized);
+  assert.equal(substitute(selectSlot(penalized, 1), 0), penalized);
+
+  const reopened = resolve(substituted);
+  assert.equal(reopened.windowDecision, null);
+  assert.notEqual(substitute(selectSlot(reopened, 0), 0), reopened);
+});
+
+test("repeated clicks cannot farm Pressure or Chain", () => {
+  let state = running({ roster: "relay", sequence: "vice" });
+  state = selectSlot(state, 0); state = substitute(state, 0);
+  const pressure = state.pressure; const chain = state.chain; const roster = [...state.active, ...state.bench];
+  for (let count = 0; count < 20; count += 1) {
+    state = selectSlot(state, count % 3); state = substitute(state, count % 3); state = dumpAndChange(state); state = takePenalty(state);
+  }
+  assert.equal(state.pressure, pressure); assert.equal(state.chain, chain);
+  assert.deepEqual([...state.active, ...state.bench], roster);
+  assert.equal(state.stats.substitutions, 1);
+});
+
 function freshnessPolicy(roster, sequence) {
   let state = running({ roster, sequence, cadence: "control" });
   while (state.phase === "running") {

@@ -645,6 +645,12 @@ This revision remains awaiting human validation and makes only narrow rule chang
 
 Automated policy gates now require supported freshness not to sweep all roster/sequence conditions, wins/ties/losses in both recruit/release matrices, and zero wins plus at least one loss for every-resolution Full Change. Passing these automated gates does not select 3B as a baseline; human stabilization play remains required.
 
+### Live-action window revision
+
+A subsequent human run confirmed recruit risk and diagnosis clarity but exposed 10–16 substitutions within twelve resolution windows. This allowed rapid supported bench cycling to farm Chain and Pressure before resolution.
+
+LSL-3B now permits one mutually exclusive line decision per resolution window: one live substitution, one Full Change, one intentional penalty, or no action. The clock continues after a committed decision, and further action inputs are rejected until resolution without changing Pressure, Chain, or roster state. The final campaign comparison also shows named failure totals, recruit deployment, and the last broken link. This remains a stabilization change awaiting human validation; LSL-3B is not marked passed.
+
 ---
 
 ## Result-entry template
