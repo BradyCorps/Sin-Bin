@@ -7,7 +7,7 @@ This file records what each mechanical prototype was intended to test, what rema
 | ID | Branch | Question | Status | Decision |
 |---|---|---|---|---|
 | LSL-1 | `control/live-shift-lab-v1` | Is rewiring a hockey line while its scoring play remains alive inherently fun? | Completed internally | Passed as the immutable control |
-| LSL-2A | `experiment/live-shift-lab-2a` | Does the hook support different machines, planning, and repeatable depth? | Ready to implement | Pending |
+| LSL-2A | `experiment/live-shift-lab-2a` | Does the hook support different machines, planning, and repeatable depth? | Implemented; awaiting human playtesting | Pending human evidence |
 
 ---
 
@@ -64,7 +64,9 @@ The result does **not** establish broad appeal, long-term depth, non-hockey acce
 ## LSL-2A — Two different machines
 
 **Branch:** `experiment/live-shift-lab-2a`  
-**Status:** Ready to implement
+**Status:** Implemented; awaiting human playtesting
+
+Implementation includes selectable Relay and Overload machines, three fixed opponent sequences, five- and eight-second cadence conditions, deterministic identical-condition replay, and post-run causal diagnosis. No behavioural result is claimed: LSL-2A remains pending until human playtesting supplies evidence against the pass and redesign signals below.
 
 ### Primary question
 
