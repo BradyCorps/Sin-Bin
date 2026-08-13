@@ -37,6 +37,23 @@ THE MACHINE HELD
 3 disruption failures. A bad bounce severed the sequence. +35 Threat; Chain fell to ×1.00.
 
 identified that I needed to hold off opponent pressure that was at 91, put in grit and developed the desired result to win 3-0
+
+## LSL-3 · THREE-GAME DIAGNOSIS
+RUN COMPLETE
+GAME 1 · HELD
+
+4 disruption failures. VERA stayed active with no Energy and lost the next link. −8 Pressure, +14 Threat.
+Recruited ADA for the next game.
+GAME 2 · HELD
+
+1 disruption failures. The shooting lane closed before the release. +26 Threat; Chain fell to ×3.67.
+Recruited ECHO for the next game.
+GAME 3 · HELD
+
+2 disruption failures. Tired legs were caught above the puck. +32 Threat; Chain fell to ×3.35.
+Final game.
+
+Identified that I needed players to absorb pressure. Dumped players with low stamina in order to get players that could cover and absorb energy from opposing team. Need to add how much stamina current players have when dropping.
 ## Experiment index
 
 | ID | Branch | Question | Status | Decision |
