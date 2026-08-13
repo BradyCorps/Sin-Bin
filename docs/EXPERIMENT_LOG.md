@@ -54,6 +54,114 @@ GAME 3 · HELD
 Final game.
 
 Identified that I needed players to absorb pressure. Dumped players with low stamina in order to get players that could cover and absorb energy from opposing team. Need to add how much stamina current players have when dropping.
+
+# SIN BIN MECHANIC TEST 03 PLAY 2
+
+Starting Machine
+Relay
+5 Seconds
+
+Starting Players
+Vale
+Marlow
+Vera
+
+Bench
+Inez
+Kestrel
+June
+
+NEXT // 1
+HIGH FORECHECK
+DEFENSIBLE FUTURES
+Absorb it, outrun it, or spend Chain.
+
+NEXT // 2
+BOARD PIN
+DEFENSIBLE FUTURES
+Grit, a bridge, or enough stored Pressure can escape.
+
+NEXT // 4
+LONG CHANGE
+DEFENSIBLE FUTURES
+Fresh legs, Control, or a live bridge can survive.
+
+NEXT // 5
+HARD MATCH
+DEFENSIBLE FUTURES
+Change shape, overcharge, or trust a hot Chain.
+
+GAME 1 DIAGNOSIS · THE VICE
+THE MACHINE HELD
+2
+—
+0
+
+3 substitutions; 3 possession bridges.
+
+2 chain breaks; 0 fatigue failures.
+
+3 dumps surrendered 36 Pressure.
+
+0 penalties; 0 shorthanded intervals survived; 0 return triggers.
+
+2 disruption failures. A bad bounce severed the sequence. +35 Threat; Chain fell to ×1.00.
+
+Notes: Hard to Write notes because the game is moving, which is good causes me to remain focused. Made change to add in grit during 2 to not give advantage
+
+
+releasing June for Briar to add in shield and stability
+
+1
+—
+1
+
+12 substitutions; 6 possession bridges.
+
+7 chain breaks; 0 fatigue failures.
+
+0 dumps surrendered 0 Pressure.
+
+0 penalties; 0 shorthanded intervals survived; 0 return triggers.
+
+3 disruption failures. The final wave died before the horn. +43 Threat; Chain fell to ×1.35.
+
+Notes: Needed more Screens during this run, only had shorter stamina offensive players. Outmatched and left too many chain breaks. Releasing INEZ for DOVE for a more flexible 2 way player
+
+GAME 3 DIAGNOSIS · STATIC ICE
+THE MACHINE HELD
+1
+—
+1
+
+9 substitutions; 4 possession bridges.
+
+5 chain breaks; 1 fatigue failures.
+
+0 dumps surrendered 0 Pressure.
+
+0 penalties; 0 shorthanded intervals survived; 0 return triggers.
+
+3 disruption failures. The final wave died before the horn. +43 Threat; Chain fell to ×1.00.
+
+Notes: Static Game, was unable to create offense due to pressure. Left absorb players out too long without any offensive outlet. No creativity and therefore failed to contain the cpu.
+
+LSL-3 · THREE-GAME DIAGNOSIS
+RUN COMPLETE
+GAME 1 · HELD
+
+2 disruption failures. A bad bounce severed the sequence. +35 Threat; Chain fell to ×1.00.
+Recruited BRIAR for the next game.
+GAME 2 · HELD
+
+3 disruption failures. The final wave died before the horn. +43 Threat; Chain fell to ×1.35.
+Recruited DOVE for the next game.
+GAME 3 · HELD
+
+3 disruption failures. The final wave died before the horn. +43 Threat; Chain fell to ×1.00.
+Final game.
+
+
 ## Experiment index
 
 | ID | Branch | Question | Status | Decision |
