@@ -2,7 +2,7 @@
 
 **Status:** Mechanical discovery validated by the creator; broader validation pending  
 **Control:** `control/live-shift-lab-v1` at `11bc77dadc19bf319b96632464e4e29935eb6fd7`  
-**Current experiment:** `experiment/live-shift-lab-3b`
+**Current experiment:** `experiment/live-shift-lab-4`
 
 ## The game in one sentence
 
@@ -149,6 +149,29 @@ The next test after 2A should be a three-game miniature campaign with one face-u
 Do not add currency, a shop, permanent upgrades, or win-gated recovery to that first campaign test.
 
 Mechanical skaters should ultimately be unlocked through play, challenges, and discoveries. Cosmetic variants can provide shiny-card appeal without withholding mechanics or relying on paid randomized acquisition.
+
+## Live Shift Lab 4
+
+### Question
+
+> Can the player deliberately construct different viable six-skater machines from a limited face-up pool, then feel those pre-run choices during live operation?
+
+LSL-4 tests construction as preparation for the stabilized live loop, not as a separate deck-building game. The player should form a plan about substitution rhythm, specialist coverage, fatigue, and one-action windows before Game 1, then discover whether that plan survives three fixed opponent sequences.
+
+### Hypotheses
+
+- **H1 — Construction identity:** Different valid six-skater selections create meaningfully different live substitution plans.
+- **H2 — Felt consequence:** A pre-run inclusion, exclusion, or bench-order choice becomes relevant during live play and can be named afterward.
+- **H3 — Multiple viable machines:** At least two mechanically different constructions can succeed under the same opponent scripts.
+- **H4 — No generic roster:** Selecting the broadest-fit or highest-Energy skaters is not universally superior.
+- **H5 — Live game remains primary:** Construction is concise and its value is judged through operation, not through time spent optimizing before play.
+
+### Boundaries
+
+- Preserve the LSL-3B three-game recruitment loop, deterministic scripts, chosen cadence, one mutually exclusive decision per resolution, and rectangle presentation.
+- Offer a small fixed face-up pool and require exactly six skaters: three starting and three ordered on the bench.
+- Do not add currency, shops, rarity, packs, unlocks, permanent upgrades, recovery economy, character art, or collection persistence.
+- Do not widen the skater library merely to simulate content volume; reuse proven short effects wherever possible.
 
 ## Deferred presentation direction
 

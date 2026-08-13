@@ -379,6 +379,7 @@ Final game.
 | LSL-2A | `experiment/live-shift-lab-2a` | Does the hook support different machines, planning, and repeatable depth? | Completed internally | Proceed to narrow recruitment test |
 | LSL-3 | `experiment/live-shift-lab-3` | Does a diagnosed failure create a natural motive to recruit a missing component? | Completed internally | Hypothesis passed; stabilization required before baseline |
 | LSL-3B | `experiment/live-shift-lab-3b` | Can the recruitment loop resist invalid state and generic winning policies without new systems? | Completed internally | Passed; selected baseline for LSL-4 |
+| LSL-4 | `experiment/live-shift-lab-4` | Can deliberate six-skater construction create different viable live machines? | Defined; ready to implement | Pending |
 
 ---
 
@@ -673,6 +674,66 @@ This evidence remains creator-only. Broader-player validation, intentional-penal
 - Freeze `experiment/live-shift-lab-3b` as the successful stabilization checkpoint after this record is committed.
 - Start LSL-4 from this branch, not from the newest branch by default.
 - Preserve the immutable LSL-1 control at `11bc77d`.
+
+---
+
+## LSL-4 — Construct the machine
+
+**Branch:** `experiment/live-shift-lab-4`
+**Status:** Defined; ready to implement
+
+### Primary question
+
+> Can the player deliberately construct different viable six-skater machines from a limited face-up pool, then feel those choices during the stabilized live campaign?
+
+### Changed variable
+
+- Before Game 1, choose exactly six skaters from a small fixed face-up pool.
+- Assign three starters to Recover, Create, and Finish.
+- Order three bench skaters.
+- Carry that constructed machine into the existing three-game recruit/release loop.
+
+### Controlled variables
+
+- The LSL-3B one-action resolution window, deterministic rules, failure diagnosis, and policy resistance.
+- Three fixed opponent sequences and the chosen five- or eight-second cadence.
+- One face-up recruit decision after games one and two.
+- Three active skaters, three visible bench skaters, Energy, Pressure, Chain, Full Change, intentional penalties, returns, and deterministic replay.
+- Rectangle-only presentation.
+
+### Minimum instrumentation
+
+- Initial six-skater selection, starter slots, and bench order.
+- Time spent on construction and number of selection changes before starting.
+- Which initial choices entered play, resolutions played, and relevant triggers or failures.
+- Recruit/release changes across the campaign.
+- Final diagnosis asking which pre-run choice mattered and which omitted capability was missed.
+
+### Pass signals
+
+- The player describes a live plan before starting and intentionally operates it during play.
+- At least two different constructions produce viable but different substitution rhythms.
+- A lower-Energy or narrower-fit specialist is deliberately included for a state-dependent role.
+- An excluded capability creates a legible cost without prescribing one mandatory roster.
+- Construction remains brief relative to live play.
+
+### Redesign signals
+
+- The broadest-fit or highest-Energy six are consistently best.
+- Starter and bench order barely affect live decisions.
+- Recruitment simply repairs an obviously incomplete starting roster every run.
+- Most enjoyment or analysis moves out of the live game and into roster selection.
+- One solved construction handles every opponent script.
+
+### Exclusions
+
+- No economy, shops, currency, rarity, randomized packs, unlocks, permanent upgrades, or persistent collection.
+- No new campaign length, recovery system, management screen, art direction, cosmetics, or narrative layer.
+- No expansion of the pool beyond the smallest set needed to compare different machines.
+
+### Decision gate
+
+Do not expand into collection or progression unless two distinct constructed machines are independently enjoyable, their live operation differs materially, and pre-run choices create understandable consequences without overwhelming the live-rewire core.
 
 ---
 
