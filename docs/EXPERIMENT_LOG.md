@@ -372,7 +372,8 @@ Final game.
 |---|---|---|---|---|
 | LSL-1 | `control/live-shift-lab-v1` | Is rewiring a hockey line while its scoring play remains alive inherently fun? | Completed internally | Passed as the immutable control |
 | LSL-2A | `experiment/live-shift-lab-2a` | Does the hook support different machines, planning, and repeatable depth? | Completed internally | Proceed to narrow recruitment test |
-| LSL-3 | `experiment/live-shift-lab-3` | Does a diagnosed failure create a natural motive to recruit a missing component? | Completed internally | Passed; selected baseline for next experiment |
+| LSL-3 | `experiment/live-shift-lab-3` | Does a diagnosed failure create a natural motive to recruit a missing component? | Completed internally | Hypothesis passed; stabilization required before baseline |
+| LSL-3B | `experiment/live-shift-lab-3b` | Can the recruitment loop resist invalid state and generic winning policies without new systems? | Implemented; awaiting validation | Pending |
 
 ---
 
@@ -601,11 +602,34 @@ This does not establish broad-player appeal. Intentional penalties remained unus
 
 ### Decision
 
-**Passed; selected baseline for next experiment.**
+**Hypothesis passed; stabilization required before baseline.**
 
-- Preserve LSL-3 as the successful source for the next narrow experiment.
+- Preserve the LSL-3 recruitment finding while stabilizing its implementation on `experiment/live-shift-lab-3b`.
 - Do not modify or replace the immutable LSL-1 control.
 - Do not add currency, shops, rarity, permanent upgrades, or presentation expansion merely because recruitment passed.
+
+---
+
+## LSL-3B — Stabilize the recruitment loop
+
+**Branch:** `experiment/live-shift-lab-3b`
+**Status:** Implemented; awaiting validation
+
+### Question
+
+> Can the passed recruitment idea survive removal of invalid state, cadence bypasses, and generic winning policies without adding new systems?
+
+### Stabilization scope
+
+- Full Change assigns three unique skaters and preserves a six-skater roster across all recruit/release combinations.
+- Full Change is limited to once per resolution and surrenders Pressure while clearing less Threat.
+- The player-facing Resolve Now shortcut is removed so five- and eight-second cadence conditions remain real.
+- Intentional-penalty overcharge scales with current Threat and Chain rather than paying its maximum value automatically.
+- Previous-game diagnosis remains visible during recruitment.
+- Dump and SIN BIN actions remain visible near the bottom of the viewport through a sticky action deck.
+- Automated policy checks reject a universal sweep by generic freshness-first or penalty-first strategies.
+
+No recruits, progression, economy, art, or additional management systems were added. LSL-3B does not yet establish a stabilized baseline.
 
 ---
 

@@ -1,9 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
-  CADENCES, PENALTY_RESOLUTIONS, advanceClock, createGame, diagnosis,
-  getDisruption, initialLineup, moveBenchSkater, recruitIntoLineup, resolve,
-  selectSlot, startGame, substitute, takePenalty,
+  CADENCES, PENALTY_RESOLUTIONS, PLAYERS, RECRUIT_OFFERS, SEQUENCES,
+  advanceClock, createGame, diagnosis, dumpAndChange, getDisruption,
+  initialLineup, moveBenchSkater, recruitIntoLineup, resolve, selectSlot,
+  startGame, substitute, takePenalty,
 } from "../app/game-engine.mjs";
 
 function running(conditions) { return startGame(createGame(conditions)); }
@@ -110,4 +111,77 @@ test("recruit diagnosis distinguishes starting on ice from a live entry", () => 
   state = resolve(state);
   assert.equal(state.stats.recruitEntries, 0); assert.equal(state.stats.recruitResolutions, 1);
   assert.ok(diagnosis(state).some((line) => line.includes("ADA: started on ice; 0 live substitution entries; 1 resolutions played")));
+});
+
+test("Full Change preserves six unique skaters across recruit and release combinations", () => {
+  for (const roster of ["relay", "overload"]) {
+    const original = initialLineup(roster);
+    for (const recruit of RECRUIT_OFFERS.flat()) {
+      for (const released of [...original.active, ...original.bench]) {
+        const lineup = recruitIntoLineup(original, released, recruit);
+        const changed = dumpAndChange(running({ roster, sequence: "vice", lineup }));
+        const ids = [...changed.active.filter(Boolean), ...changed.bench];
+        assert.equal(changed.active.filter(Boolean).length, 3, `${roster}/${recruit}/${released} active count`);
+        assert.equal(changed.bench.length, 3, `${roster}/${recruit}/${released} bench count`);
+        assert.equal(new Set(ids).size, 6, `${roster}/${recruit}/${released} unique count`);
+      }
+    }
+  }
+});
+
+test("Full Change is limited to once per resolution", () => {
+  const state = running({ roster: "relay", sequence: "vice" });
+  const changed = dumpAndChange(state);
+  assert.equal(dumpAndChange(changed), changed);
+  const afterResolution = resolve(changed);
+  assert.notEqual(dumpAndChange(afterResolution), afterResolution);
+});
+
+function freshnessPolicy(roster, sequence) {
+  let state = running({ roster, sequence, cadence: "control" });
+  while (state.phase === "running") {
+    const activeSlot = state.active.reduce((lowest, id, slot) => id && state.energy[id] < state.energy[state.active[lowest]] ? slot : lowest, 0);
+    const benchIndex = state.bench.reduce((highest, id, index) => state.energy[id] > state.energy[state.bench[highest]] ? index : highest, 0);
+    state = selectSlot(state, activeSlot); state = substitute(state, benchIndex); state = resolve(state);
+  }
+  return state.outcome.result;
+}
+
+function penaltyFirstPolicy(roster, sequence) {
+  let state = running({ roster, sequence, cadence: "control" });
+  while (state.phase === "running") {
+    if (!state.sinBin) {
+      const slot = state.active.findIndex((id) => id && !state.penaltiesUsed.includes(id));
+      if (slot >= 0) { state = selectSlot(state, slot); state = takePenalty(state); }
+    }
+    state = resolve(state);
+  }
+  return state.outcome.result;
+}
+
+test("generic freshness and penalty-first policies do not sweep every condition", () => {
+  const conditions = Object.keys(PLAYERS).flatMap((roster) => Object.keys(SEQUENCES).map((sequence) => [roster, sequence]));
+  const freshnessWins = conditions.filter(([roster, sequence]) => freshnessPolicy(roster, sequence) === "win").length;
+  const penaltyWins = conditions.filter(([roster, sequence]) => penaltyFirstPolicy(roster, sequence) === "win").length;
+  assert.ok(freshnessWins < conditions.length, `freshness won ${freshnessWins}/${conditions.length}`);
+  assert.ok(penaltyWins < conditions.length, `penalty-first won ${penaltyWins}/${conditions.length}`);
+});
+
+test("recruit and release choices change outcomes under identical generic decisions", () => {
+  for (const roster of Object.keys(PLAYERS)) {
+    const original = initialLineup(roster); const results = new Set();
+    for (const recruit of RECRUIT_OFFERS.flat()) {
+      for (const released of [...original.active, ...original.bench]) {
+        const lineup = recruitIntoLineup(original, released, recruit);
+        let state = running({ roster, sequence: "static", cadence: "control", lineup });
+        while (state.phase === "running") {
+          const activeSlot = state.active.reduce((lowest, id, slot) => id && state.energy[id] < state.energy[state.active[lowest]] ? slot : lowest, 0);
+          const benchIndex = state.bench.reduce((highest, id, index) => state.energy[id] > state.energy[state.bench[highest]] ? index : highest, 0);
+          state = selectSlot(state, activeSlot); state = substitute(state, benchIndex); state = resolve(state);
+        }
+        results.add(state.outcome.result);
+      }
+    }
+    assert.ok(results.size > 1, `${roster} recruit choices all resolved ${[...results].join()}`);
+  }
 });

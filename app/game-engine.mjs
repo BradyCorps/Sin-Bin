@@ -104,7 +104,7 @@ export function createGame(conditions = {}) {
   return {
     phase: "ready", conditions: selected, resolution: 0, clockMs: CADENCES[selected.cadence], active: [...lineup.active], bench: [...lineup.bench],
     energy: Object.fromEntries(Object.entries(available).map(([id, p]) => [id, p.energy])), pressure: 18, threat: 0, chain: 1, maxChain: 1,
-    selectedSlot: null, sinBin: null, penaltiesUsed: [], changedThisResolution: false, lastBridge: false, goalsFor: 0, goalsAgainst: 0,
+    selectedSlot: null, sinBin: null, penaltiesUsed: [], changedThisResolution: false, dumpedThisResolution: false, lastBridge: false, goalsFor: 0, goalsAgainst: 0,
     feed: [`${SEQUENCES[selected.sequence].name}: ${SEQUENCES[selected.sequence].description}`], events: [], outcome: null,
     stats: { substitutions: 0, bridges: 0, chainBreaks: 0, fatigueFailures: 0, dumps: 0, surrendered: 0, penalties: 0, survived: 0, returns: 0, recruitEntries: 0, recruitResolutions: 0 },
   };
@@ -127,10 +127,10 @@ export function substitute(state, benchIndex) {
     if (bridge) next.stats.bridges += 1;
     const relayGain = next.conditions.roster === "relay" ? 0.28 : 0.1;
     next.chain = clamp(next.chain + relayGain + (natural ? 0.08 : 0), 1, 4.5);
-    next.pressure += next.conditions.roster === "relay" ? 5 : 2;
+    next.pressure += next.conditions.roster === "relay" ? (bridge ? 2 : 0) : 1;
     record(next, bridge ? "bridge" : "substitution", `${outgoing.name} → ${incoming.name}: ${bridge ? "possession bridge" : "clean lane change"}; Chain ×${next.chain.toFixed(2)}.`, { outgoing: outgoingId, incoming: incomingId, slot });
   } else {
-    const before = next.chain; next.chain = 1; next.pressure = Math.max(0, next.pressure - 20); next.threat += 8; next.stats.chainBreaks += 1;
+    const before = next.chain; next.chain = 1; next.pressure = Math.max(0, next.pressure - 20); scoreThreat(next, 12, `${incoming.name} entered without a supported exit.`); next.stats.chainBreaks += 1;
     record(next, "chain-break", `${incoming.name} could not receive ${outgoing.name}'s exit in ${["Recover", "Create", "Finish"][slot]}; Chain ${before.toFixed(2)} → 1.00.`, { outgoing: outgoingId, incoming: incomingId, slot, cause: "unsupported live change" });
   }
   if (next.conditions.roster === "overload" && incoming.tags.includes("charge") && next.energy[incomingId] === incoming.energy) {
@@ -140,19 +140,31 @@ export function substitute(state, benchIndex) {
 }
 
 export function dumpAndChange(state) {
-  if (state.phase !== "running") return state; const next = copy(state); const surrendered = Math.min(18, Math.round(next.pressure));
-  const oldActive = next.active.filter(Boolean); const candidates = [...next.bench];
-  next.active = next.active.map((id, slot) => id ? candidates.sort((a, b) => player(next, b).fit[slot] - player(next, a).fit[slot])[0] : null);
-  next.bench = [...new Set([...candidates.filter((id) => !next.active.includes(id)), ...oldActive])];
-  next.pressure = Math.max(0, next.pressure - surrendered); next.threat = Math.max(0, next.threat - 8); next.chain = 1; next.selectedSlot = null; next.changedThisResolution = true; next.lastBridge = false;
+  if (state.phase !== "running" || state.dumpedThisResolution) return state; const next = copy(state); const surrendered = Math.min(18, Math.round(next.pressure));
+  const oldActive = next.active.filter(Boolean); const remaining = [...next.bench]; const assigned = [];
+  for (let slot = 0; slot < next.active.length; slot += 1) {
+    if (!next.active[slot]) { assigned.push(null); continue; }
+    let bestIndex = 0;
+    for (let index = 1; index < remaining.length; index += 1) {
+      const candidate = remaining[index]; const best = remaining[bestIndex];
+      const score = player(next, candidate).fit[slot] + next.energy[candidate] / player(next, candidate).energy;
+      const bestScore = player(next, best).fit[slot] + next.energy[best] / player(next, best).energy;
+      if (score > bestScore) bestIndex = index;
+    }
+    assigned.push(remaining.splice(bestIndex, 1)[0]);
+  }
+  next.active = assigned; next.bench = [...remaining, ...oldActive];
+  next.pressure = Math.max(0, next.pressure - surrendered); next.threat = Math.max(0, next.threat - 4); next.chain = 1; next.selectedSlot = null; next.changedThisResolution = true; next.dumpedThisResolution = true; next.lastBridge = false;
   next.stats.dumps += 1; next.stats.surrendered += surrendered; record(next, "dump", `Dump and change surrendered ${surrendered} Pressure and reset Chain to 1.00.`); return next;
 }
 
 export function takePenalty(state) {
   if (state.phase !== "running" || state.selectedSlot === null || state.sinBin) return state; const id = state.active[state.selectedSlot];
   if (!id || state.penaltiesUsed.includes(id)) return state; const next = copy(state); const p = player(next, id); const slot = next.selectedSlot;
-  next.active[slot] = null; next.sinBin = { id, slot, remaining: PENALTY_RESOLUTIONS, conceded: false }; next.penaltiesUsed.push(id); next.selectedSlot = null; next.pressure += p.penalty; next.chain = clamp(next.chain + 0.35, 1, 4.5); next.stats.penalties += 1;
-  record(next, "penalty", `${p.name} overcharged +${p.penalty} Pressure; ${PENALTY_RESOLUTIONS} shorthanded resolutions begin.`, { skater: id }); return next;
+  const stateMultiplier = 0.48 + Math.min(0.28, next.threat / 220) + Math.min(0.16, Math.max(0, next.chain - 1) * 0.1);
+  const overcharge = Math.max(7, Math.round(p.penalty * stateMultiplier));
+  next.active[slot] = null; next.sinBin = { id, slot, remaining: PENALTY_RESOLUTIONS, conceded: false }; next.penaltiesUsed.push(id); next.selectedSlot = null; next.pressure += overcharge; next.chain = clamp(next.chain + 0.25, 1, 4.5); next.stats.penalties += 1;
+  record(next, "penalty", `${p.name} overcharged +${overcharge} Pressure from the current Threat/Chain state; ${PENALTY_RESOLUTIONS} shorthanded resolutions begin.`, { skater: id, overcharge }); return next;
 }
 
 function scorePressure(next, amount) { next.pressure += amount; while (next.pressure >= 100) { next.pressure -= 100; next.goalsFor += 1; record(next, "goal", "Pressure reached 100: goal, play remains live."); } }
@@ -165,14 +177,14 @@ export function resolve(state) {
   let output = Math.round(fits.reduce((a, b) => a + b, 0) * (0.8 + next.chain * 0.25));
   if (complete) output += 7;
   if (next.conditions.roster === "relay") { if (next.lastBridge) output += 8; output = Math.round(output * 0.94); }
-  else { const charged = next.active.filter((id) => id && player(next, id).tags.includes("charge") && next.energy[id] > 0).length; output += charged * 7; if (charged >= 2) { output += 10; record(next, "overload", `Charged pair detonated: +${charged * 7 + 10} output before fatigue.`); } }
+  else { const charged = next.active.filter((id) => id && player(next, id).tags.includes("charge") && next.energy[id] > 0).length; const chargeOnline = next.chain >= 1.55; if (chargeOnline) output += charged * 7; if (charged >= 2 && chargeOnline) { output += 10; record(next, "overload", `Charged pair detonated through a preserved Chain: +${charged * 7 + 10} output before fatigue.`); } }
   if (next.sinBin) output = Math.round(output * 0.64);
   if (passed) { scorePressure(next, output + 4); next.threat = Math.max(0, next.threat - 4); next.chain = clamp(next.chain + 0.16, 1, 4.5); record(next, "resolution", `${disruption.name} survived by the current machine: +${output + 4} Pressure.`); }
-  else { const danger = Math.round(disruption.threat * (next.sinBin ? 1.5 : 1)); scorePressure(next, Math.max(0, output - 12)); next.pressure = Math.max(0, next.pressure - 12); next.chain = Math.max(1, next.chain - 0.45); next.stats.chainBreaks += 1; scoreThreat(next, danger, disruption.fail); record(next, "failure", `${disruption.fail} +${danger} Threat; Chain fell to ×${next.chain.toFixed(2)}.`, { cause: disruption.fail, disruption: disruption.name, threat: danger }); }
+  else { const danger = Math.round(disruption.threat * (next.sinBin ? 1.5 : 1)); next.pressure = Math.max(0, next.pressure - 18); next.chain = 1; next.stats.chainBreaks += 1; scoreThreat(next, danger, disruption.fail); record(next, "failure", `${disruption.fail} No Pressure generated; −18 Pressure, +${danger} Threat; Chain reset to ×1.00.`, { cause: disruption.fail, disruption: disruption.name, threat: danger }); }
   for (const id of next.active) if (id) { const before = next.energy[id]; next.energy[id] = Math.max(0, before - 1); if (before === 0) { const cause = `${player(next, id).name} stayed active with no Energy and lost the next link.`; next.pressure = Math.max(0, next.pressure - 8); next.stats.fatigueFailures += 1; scoreThreat(next, 14, cause); record(next, "fatigue", `${cause} −8 Pressure, +14 Threat.`, { cause, skater: id }); } }
   for (const id of next.bench) next.energy[id] = Math.min(player(next, id).energy, next.energy[id] + 1);
   if (next.sinBin) { next.sinBin.remaining -= 1; if (next.sinBin.remaining === 0) { const { id, slot, conceded } = next.sinBin; const p = player(next, id); next.active[slot] = id; next.energy[id] = p.energy; const value = conceded ? Math.round(p.returned / 2) : p.returned; next.sinBin = null; next.stats.returns += 1; if (!conceded) next.stats.survived += 1; next.chain = conceded ? 1 : clamp(next.chain + 0.5, 1, 4.5); scorePressure(next, value); record(next, "return", `${p.name} returned after exactly ${PENALTY_RESOLUTIONS} resolutions: +${value} Pressure; ${conceded ? "concession halved the trigger" : "shorthanded interval survived"}.`, { skater: id, survived: !conceded, value }); } }
-  next.changedThisResolution = false; next.lastBridge = false; next.selectedSlot = null; next.maxChain = Math.max(next.maxChain, next.chain); next.clockMs = CADENCES[next.conditions.cadence];
+  next.changedThisResolution = false; next.dumpedThisResolution = false; next.lastBridge = false; next.selectedSlot = null; next.maxChain = Math.max(next.maxChain, next.chain); next.clockMs = CADENCES[next.conditions.cadence];
   if (next.resolution >= RUN_RESOLUTIONS || next.goalsFor >= 3 || next.goalsAgainst >= 3) { const result = next.goalsFor > next.goalsAgainst ? "win" : next.goalsFor < next.goalsAgainst ? "loss" : "tie"; next.phase = "ended"; next.outcome = { result, won: result === "win", explanation: next.events.filter((e) => e.type === "failure" || e.type === "fatigue" || e.type === "chain-break").at(-1)?.text ?? "The machine reached the horn without a broken link." }; record(next, "end", `Run ended ${result}: ${next.goalsFor}–${next.goalsAgainst}; Pressure ${Math.round(next.pressure)}, Threat ${Math.round(next.threat)}.`); }
   return next;
 }
