@@ -1,7 +1,42 @@
 # Live Shift experiment log
-
 This file records what each mechanical prototype was intended to test, what remained controlled, what happened, and what decision followed. Add results here before treating an experimental branch as a new baseline.
+## Play Test
 
+2A RUN DIAGNOSIS // RELAY · THE VICE · 8s
+THE MACHINE HELD
+3
+—
+0
+
+9 substitutions; 6 possession bridges.
+
+2 chain breaks; 0 fatigue failures.
+
+0 dumps surrendered 0 Pressure.
+
+0 penalties; 0 shorthanded intervals survived; 0 return triggers.
+
+2 disruption failures. The last skater was beaten in open ice. +38 Threat; Chain fell to ×2.34.
+
+Identified during the game that I needed to have a finisher/sniper when the chain was built. that sniper needed to have legs/stamina in order to produce the desired result. 
+
+played a sprint game
+THE MACHINE HELD
+3
+—
+0
+
+8 substitutions; 3 possession bridges.
+
+4 chain breaks; 0 fatigue failures.
+
+0 dumps surrendered 0 Pressure.
+
+0 penalties; 0 shorthanded intervals survived; 0 return triggers.
+
+3 disruption failures. A bad bounce severed the sequence. +35 Threat; Chain fell to ×1.00.
+
+identified that I needed to hold off opponent pressure that was at 91, put in grit and developed the desired result to win 3-0
 ## Experiment index
 
 | ID | Branch | Question | Status | Decision |
