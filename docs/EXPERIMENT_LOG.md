@@ -363,7 +363,12 @@ Last broken link: The final wave died before the horn. +43 Threat; Chain fell to
 Final game.
 
 
+## SIN BIN MECHANIC UPDATE END 3B TRIAL - NEW BASELINE STARTS HERE - CHANGES HERE ARE LSL-4 +
 
+  - The revised build was operational and successful.
+  - One action per resolution made decisions feel materially more important.
+  - Rapid substitution farming was no longer available.
+  - Human validation remains creator-only; broader-player validation is still outstanding.
 
 
 ## Experiment index
@@ -373,7 +378,7 @@ Final game.
 | LSL-1 | `control/live-shift-lab-v1` | Is rewiring a hockey line while its scoring play remains alive inherently fun? | Completed internally | Passed as the immutable control |
 | LSL-2A | `experiment/live-shift-lab-2a` | Does the hook support different machines, planning, and repeatable depth? | Completed internally | Proceed to narrow recruitment test |
 | LSL-3 | `experiment/live-shift-lab-3` | Does a diagnosed failure create a natural motive to recruit a missing component? | Completed internally | Hypothesis passed; stabilization required before baseline |
-| LSL-3B | `experiment/live-shift-lab-3b` | Can the recruitment loop resist invalid state and generic winning policies without new systems? | Implemented; awaiting validation | Pending |
+| LSL-3B | `experiment/live-shift-lab-3b` | Can the recruitment loop resist invalid state and generic winning policies without new systems? | Completed internally | Passed; selected baseline for LSL-4 |
 
 ---
 
@@ -613,7 +618,7 @@ This does not establish broad-player appeal. Intentional penalties remained unus
 ## LSL-3B — Stabilize the recruitment loop
 
 **Branch:** `experiment/live-shift-lab-3b`
-**Status:** Implemented; awaiting validation
+**Status:** Completed internally
 
 ### Question
 
@@ -650,6 +655,24 @@ Automated policy gates now require supported freshness not to sweep all roster/s
 A subsequent human run confirmed recruit risk and diagnosis clarity but exposed 10–16 substitutions within twelve resolution windows. This allowed rapid supported bench cycling to farm Chain and Pressure before resolution.
 
 LSL-3B now permits one mutually exclusive line decision per resolution window: one live substitution, one Full Change, one intentional penalty, or no action. The clock continues after a committed decision, and further action inputs are rejected until resolution without changing Pressure, Chain, or roster state. The final campaign comparison also shows named failure totals, recruit deployment, and the last broken link. This remains a stabilization change awaiting human validation; LSL-3B is not marked passed.
+
+### Human validation
+
+The creator-player reported that the revised build was operational and successful. Restricting each resolution window to one line decision made every choice feel materially more important, and rapid substitution farming was no longer available.
+
+### Interpretation
+
+LSL-3B passed its internal stabilization gate. Automated checks reject the reported generic-policy sweeps and invalid roster states, while human play confirmed that the action limit strengthens rather than weakens the live decision. Recruitment remains mechanically legible under the stabilized rules.
+
+This evidence remains creator-only. Broader-player validation, intentional-penalty usage, and the behavioral value of bench ordering remain open questions.
+
+### Decision
+
+**Passed; selected baseline for LSL-4.**
+
+- Freeze `experiment/live-shift-lab-3b` as the successful stabilization checkpoint after this record is committed.
+- Start LSL-4 from this branch, not from the newest branch by default.
+- Preserve the immutable LSL-1 control at `11bc77d`.
 
 ---
 
