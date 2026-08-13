@@ -47,6 +47,10 @@ export default defineConfig(async () => {
     server: {
       host: "0.0.0.0",
       allowedHosts: ["terminal.local"],
+      // Vite enables agent console forwarding automatically, but its browser
+      // handler can send before the Codespaces-proxied HMR socket connects.
+      // Browser logging and HMR still work without this optional relay.
+      forwardConsole: false,
       ...(isCodexSeatbeltSandbox
         ? { watch: { useFsEvents: false, usePolling: true } }
         : {}),
