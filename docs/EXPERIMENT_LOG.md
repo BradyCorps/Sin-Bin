@@ -55,7 +55,7 @@ Final game.
 
 Identified that I needed players to absorb pressure. Dumped players with low stamina in order to get players that could cover and absorb energy from opposing team. Need to add how much stamina current players have when dropping.
 
-# SIN BIN MECHANIC TEST 03 PLAY 2
+## SIN BIN MECHANIC TEST 03 PLAY 2
 
 Starting Machine
 Relay
@@ -160,6 +160,210 @@ GAME 3 · HELD
 
 3 disruption failures. The final wave died before the horn. +43 Threat; Chain fell to ×1.00.
 Final game.
+## SIN BIN MECHANIC TEST 03 PLAY 3 post Implemented and pushed the LSL-3 playtest revisions.
+
+Played on Overcharged 5 second
+GAME 1 DIAGNOSIS · THE VICE
+THE MACHINE WON
+
+The machine finished ahead on goals.
+3
+—
+0
+
+5 substitutions; 1 possession bridges.
+
+2 chain breaks; 0 fatigue failures.
+
+0 dumps surrendered 0 Pressure.
+
+0 penalties; 0 shorthanded intervals survived; 0 return triggers.
+
+0 disruption failures. SABINE could not receive ROOK's exit in Create; Chain 1.16 → 1.00.
+
+
+Notes: Between Games now shoes Current skaters energy, and other attributes
+BETWEEN GAMES · DIAGNOSE → RECRUIT → RELEASE → ORDER
+WHAT WAS MISSING?
+
+Choose a mechanical future. There is no aggregate rating: compare fit, Energy capacity, and effects.
+
+Replacing Rook for ADA now shows:
+GAIN
+ADA · Outlet
+Energy 6 · bridge / handoff
+↔
+LOSE
+ROOK · Breaker
+Energy 3 · recover / charge
+
+GAME 2 DIAGNOSIS · THE CHASE
+THE MACHINE WON
+
+The machine finished ahead on goals.
+3
+—
+0
+
+8 substitutions; 2 possession bridges.
+
+0 chain breaks; 2 fatigue failures.
+
+0 dumps surrendered 0 Pressure.
+
+0 penalties; 0 shorthanded intervals survived; 0 return triggers.
+
+Recruited ADA: 0 live entries, 8 resolutions played.
+
+0 disruption failures. ADA stayed active with no Energy and lost the next link. −8 Pressure, +14 Threat.
+
+Notes: Good round, understanding game mechanics now. Changing Sabine for Fox for more charge and shot
+GAIN
+FOX · Gambler
+Energy 2 · charge / shot
+↔
+LOSE
+SABINE · Pest
+Energy 3 · finish / charge
+
+GAME 3 DIAGNOSIS · STATIC ICE
+THE MACHINE WON
+
+The machine finished ahead on goals.
+3
+—
+0
+
+8 substitutions; 4 possession bridges.
+
+0 chain breaks; 0 fatigue failures.
+
+0 dumps surrendered 0 Pressure.
+
+0 penalties; 0 shorthanded intervals survived; 0 return triggers.
+
+Recruited FOX: 1 live entries, 3 resolutions played.
+
+0 disruption failures. The machine reached the horn without a broken link.
+
+notes: changes seemed to have worked
+
+LSL-3 · THREE-GAME DIAGNOSIS
+RUN COMPLETE
+GAME 1 · WIN
+
+0 penalties; 0 shorthanded intervals survived; 0 return triggers.
+
+0 disruption failures. SABINE could not receive ROOK's exit in Create; Chain 1.16 → 1.00.
+Next move: recruited ADA, released ROOK.
+GAME 2 · WIN
+
+Recruited ADA: 0 live entries, 8 resolutions played.
+
+0 disruption failures. ADA stayed active with no Energy and lost the next link. −8 Pressure, +14 Threat.
+Next move: recruited FOX, released SABINE.
+GAME 3 · WIN
+
+Recruited FOX: 1 live entries, 3 resolutions played.
+
+0 disruption failures. The machine reached the horn without a broken link.
+Final game.
+
+## SIN BIN MECHANIC TEST 03 PLAY 4
+
+GAME 1 DIAGNOSIS · THE VICE
+THE MACHINE WON
+
+The machine finished ahead on goals.
+2
+—
+0
+
+7 substitutions; 5 possession bridges.
+
+3 disruption failures; 1 unsupported substitution breaks; 1 fatigue failures.
+
+1 dumps surrendered 0 Pressure.
+
+0 penalties; 0 shorthanded intervals survived; 0 return triggers.
+
+Last broken link: MARLOW could not receive VERA's exit in Finish; Chain 2.27 → 1.00.
+
+
+
+
+Changed VALE for CATO
+Less Energy but more charge, burst and finish to provide quick offense
+
+GAME 2 DIAGNOSIS · THE CHASE
+THE MACHINE SURVIVED
+
+The score finished level. Pressure and Threat remain diagnostic values, not a hidden tiebreaker.
+1
+—
+1
+
+11 substitutions; 6 possession bridges.
+
+4 disruption failures; 2 unsupported substitution breaks; 1 fatigue failures.
+
+0 dumps surrendered 0 Pressure.
+
+0 penalties; 0 shorthanded intervals survived; 0 return triggers.
+
+Recruited CATO: started on ice; 2 live substitution entries; 5 resolutions played.
+
+Last broken link: The final wave died before the horn. +43 Threat; Chain fell to ×1.43.
+
+Failed to make changes quickly enough and left CATO on the ice too long. Left me with a tie
+
+Replacing MARLOW with ECHO for more cover and control
+
+GAME 3 DIAGNOSIS · STATIC ICE
+THE MACHINE WON
+
+The machine finished ahead on goals.
+2
+—
+0
+
+10 substitutions; 5 possession bridges.
+
+1 disruption failures; 2 unsupported substitution breaks; 0 fatigue failures.
+
+1 dumps surrendered 16 Pressure.
+
+0 penalties; 0 shorthanded intervals survived; 0 return triggers.
+
+Recruited ECHO: started on ice; 1 live substitution entries; 5 resolutions played.
+
+Last broken link: The final wave died before the horn. +43 Threat; Chain fell to ×3.19.
+
+Change made allowed me to weather the storm better and make more accurate decisions... too many low stamina players, although more dynamic, causes mistakes. This indicates a great balance as players with lower stamina could be more effective but cant last on the ice for as long as stable  players
+
+LSL-3 · THREE-GAME DIAGNOSIS
+RUN COMPLETE
+GAME 1 · WIN
+
+0 penalties; 0 shorthanded intervals survived; 0 return triggers.
+
+Last broken link: MARLOW could not receive VERA's exit in Finish; Chain 2.27 → 1.00.
+Next move: recruited CATO, released VALE.
+GAME 2 · TIE
+
+Recruited CATO: started on ice; 2 live substitution entries; 5 resolutions played.
+
+Last broken link: The final wave died before the horn. +43 Threat; Chain fell to ×1.43.
+Next move: recruited ECHO, released MARLOW.
+GAME 3 · WIN
+
+Recruited ECHO: started on ice; 1 live substitution entries; 5 resolutions played.
+
+Last broken link: The final wave died before the horn. +43 Threat; Chain fell to ×3.19.
+Final game.
+
+
+
 
 
 ## Experiment index
@@ -168,7 +372,7 @@ Final game.
 |---|---|---|---|---|
 | LSL-1 | `control/live-shift-lab-v1` | Is rewiring a hockey line while its scoring play remains alive inherently fun? | Completed internally | Passed as the immutable control |
 | LSL-2A | `experiment/live-shift-lab-2a` | Does the hook support different machines, planning, and repeatable depth? | Completed internally | Proceed to narrow recruitment test |
-| LSL-3 | `experiment/live-shift-lab-3` | Does a diagnosed failure create a natural motive to recruit a missing component? | Implemented; awaiting human playtesting | Pending human evidence |
+| LSL-3 | `experiment/live-shift-lab-3` | Does a diagnosed failure create a natural motive to recruit a missing component? | Completed internally | Passed; selected baseline for next experiment |
 
 ---
 
@@ -345,7 +549,7 @@ Exclude currency, shops, permanent stat upgrades, randomized paid acquisition, a
 ## LSL-3 — Missing component
 
 **Branch:** `experiment/live-shift-lab-3`
-**Status:** Implemented; awaiting human playtesting
+**Status:** Completed internally
 
 ### Primary question
 
@@ -363,8 +567,6 @@ Exclude currency, shops, permanent stat upgrades, randomized paid acquisition, a
 - Each game preserves the 2A live-rewire rules, deterministic opponent script, rectangle presentation, and causal diagnosis.
 - No currency, shop, rarity, upgrades, recovery economy, unlocks, or character presentation are present.
 
-No behavioural result is claimed. LSL-3 is awaiting human playtesting.
-
 ### Playtest-driven revision
 
 The second internal playtest showed recruitment following diagnosed mechanical needs: Briar was selected for pressure absorption and Dove for flexible two-way coverage. Because this prototype has no aggregate player ratings, this is evidence of need-driven selection only; no rating tradeoff was tested.
@@ -377,6 +579,33 @@ The same playtest exposed four implementation gaps now revised for another contr
 - Later diagnoses record the recruited skater's live entries and resolutions played, while the campaign summary preserves recruit and release choices.
 
 LSL-3 remains awaiting human playtesting after this revision. These changes do not establish a pass or select the branch as a future baseline.
+
+### Diagnostic cleanup after Play 3
+
+Play 3 confirmed that recruit Energy and gain/loss comparisons were readable and that recruited skaters affected later games. A narrow diagnostic cleanup now separates disruption failures, unsupported substitution breaks, and fatigue failures. Recruit impact also distinguishes starting on ice from entering through a live substitution, alongside resolutions played. No mechanics or balance values changed. Play 4 completed the comparison run using these diagnostics.
+
+### Observed behaviour
+
+- Diagnosed pressure, coverage, finishing, and stamina needs produced specific recruit-and-release decisions across repeated three-game runs.
+- Recruits were selected by Energy capacity, lane fit, and short mechanical effects; the prototype contains no aggregate ratings.
+- Incoming/outgoing comparison made the lost capability legible before confirmation, including the cost of exchanging stability for explosive offense.
+- Recruited skaters were deliberately deployed in later games. Play 4 recorded Cato starting on ice, entering twice, and playing five resolutions; Echo started on ice, entered once, and played five resolutions.
+- Cato's low Energy contributed to a tied second game, while Echo's added control supported a subsequent win. The player described low-stamina specialists as more dynamic but harder to operate accurately.
+- Win, tie, and loss language plus separated disruption, substitution, and fatigue diagnostics agreed with the recorded outcomes in the comparison run.
+
+### Interpretation
+
+The primary LSL-3 hypothesis passed internally. A causal failure diagnosis repeatedly created a felt need for a specific mechanical component, and the acquired component changed live operation in an understandable way. Recruitment functioned as a response to play rather than detached administration.
+
+This does not establish broad-player appeal. Intentional penalties remained unused in the recorded runs, and bench-order changes did not yet produce clear behavioural evidence. Those remain design risks, not blockers to selecting the successful recruitment loop as the next experimental baseline.
+
+### Decision
+
+**Passed; selected baseline for next experiment.**
+
+- Preserve LSL-3 as the successful source for the next narrow experiment.
+- Do not modify or replace the immutable LSL-1 control.
+- Do not add currency, shops, rarity, permanent upgrades, or presentation expansion merely because recruitment passed.
 
 ---
 

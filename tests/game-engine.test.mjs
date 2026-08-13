@@ -45,8 +45,8 @@ test("penalty lasts exactly two resolutions and return trigger agrees with state
 });
 
 test("displayed failure cause is the resolved disruption outcome", () => {
-  let state = running({ roster: "overload", sequence: "vice" });
-  state.energy.rook = 0; state.chain = 1; const expected = getDisruption(state).fail; state = resolve(state);
+  let state = running({ roster: "overload", sequence: "static" });
+  state.chain = 1; const expected = getDisruption(state).fail; state = resolve(state);
   const failure = state.events.find((event) => event.type === "failure"); assert.equal(failure.cause, expected); assert.match(failure.text, new RegExp(expected.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
   state.phase = "ended"; state.outcome = { won: false, explanation: failure.text }; assert.ok(diagnosis(state).at(-1).includes(expected));
 });
@@ -89,5 +89,25 @@ test("recruit impact counts live entry and resolutions actually played", () => {
   assert.equal(state.stats.recruitEntries, 1);
   state = resolve(state);
   assert.equal(state.stats.recruitResolutions, 1);
-  assert.ok(diagnosis(state).some((line) => line.includes("ADA: 1 live entries, 1 resolutions played")));
+  assert.ok(diagnosis(state).some((line) => line.includes("ADA: started on bench; 1 live substitution entries; 1 resolutions played")));
+});
+
+test("diagnosis separates disruption, substitution and fatigue failures", () => {
+  const state = running({ roster: "relay", sequence: "vice" });
+  state.events.push(
+    { type: "failure", text: "Disruption failed." },
+    { type: "chain-break", text: "Substitution broke." },
+    { type: "fatigue", text: "Skater was gassed." },
+  );
+  const lines = diagnosis(state);
+  assert.ok(lines.some((line) => /1 disruption failures; 1 unsupported substitution breaks; 1 fatigue failures/.test(line)));
+  assert.ok(lines.some((line) => line.startsWith("Last broken link:")));
+});
+
+test("recruit diagnosis distinguishes starting on ice from a live entry", () => {
+  const lineup = recruitIntoLineup(initialLineup("overload"), "rook", "ada");
+  let state = running({ roster: "overload", sequence: "chase", lineup, recruitId: "ada" });
+  state = resolve(state);
+  assert.equal(state.stats.recruitEntries, 0); assert.equal(state.stats.recruitResolutions, 1);
+  assert.ok(diagnosis(state).some((line) => line.includes("ADA: started on ice; 0 live substitution entries; 1 resolutions played")));
 });

@@ -98,6 +98,7 @@ export function getDisruption(state) {
 
 export function createGame(conditions = {}) {
   const selected = { roster: conditions.roster ?? "relay", sequence: conditions.sequence ?? "vice", cadence: conditions.cadence ?? "control", seed: conditions.seed ?? 2, lineup: structuredClone(conditions.lineup ?? starts[conditions.roster ?? "relay"]), recruitId: conditions.recruitId ?? null };
+  selected.recruitStarted = Boolean(selected.recruitId && selected.lineup.active.includes(selected.recruitId));
   const lineup = selected.lineup;
   const available = PLAYERS[selected.roster];
   return {
@@ -180,12 +181,16 @@ export function advanceClock(state, elapsed) { if (state.phase !== "running") re
 
 export function diagnosis(state) {
   const count = (type) => state.events.filter((event) => event.type === type).length;
+  const disruptionFailures = count("failure");
+  const substitutionBreaks = count("chain-break");
+  const fatigueFailures = count("fatigue");
+  const finalCause = state.events.filter((event) => ["failure", "fatigue", "chain-break"].includes(event.type)).at(-1)?.text;
   return [
     `${state.stats.substitutions} substitutions; ${state.stats.bridges} possession bridges.`,
-    `${state.stats.chainBreaks} chain breaks; ${state.stats.fatigueFailures} fatigue failures.`,
+    `${disruptionFailures} disruption failures; ${substitutionBreaks} unsupported substitution breaks; ${fatigueFailures} fatigue failures.`,
     `${state.stats.dumps} dumps surrendered ${state.stats.surrendered} Pressure.`,
     `${state.stats.penalties} penalties; ${state.stats.survived} shorthanded intervals survived; ${state.stats.returns} return triggers.`,
-    ...(state.conditions.recruitId ? [`Recruited ${player(state, state.conditions.recruitId).name}: ${state.stats.recruitEntries} live entries, ${state.stats.recruitResolutions} resolutions played.`] : []),
-    `${count("failure")} disruption failures. ${state.outcome?.explanation ?? "No final failure cause."}`,
+    ...(state.conditions.recruitId ? [`Recruited ${player(state, state.conditions.recruitId).name}: ${state.conditions.recruitStarted ? "started on ice" : "started on bench"}; ${state.stats.recruitEntries} live substitution entries; ${state.stats.recruitResolutions} resolutions played.`] : []),
+    finalCause ? `Last broken link: ${finalCause}` : "No broken link recorded.",
   ];
 }
