@@ -1,0 +1,302 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="844" height="390" viewBox="0 0 844 390" role="img" aria-labelledby="title desc">
+  <title id="title">SINBIN live match mobile UI v0.1 wireframe</title>
+  <desc id="desc">An exact 844 by 390 landscape mobile layout showing the score, resolution count, live Pressure, Chain and Threat, disruption countdown, three active role cards, three bench cards and two mutually exclusive emergency actions. Violetta is selected on the bench, and the three active destinations preview Direct, Bridge and Breaks Chain outcomes.</desc>
+  <defs>
+    <linearGradient id="shell" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#102f42"/>
+      <stop offset="1" stop-color="#071821"/>
+    </linearGradient>
+    <linearGradient id="glass" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#183f51"/>
+      <stop offset="1" stop-color="#0a202c"/>
+    </linearGradient>
+    <linearGradient id="ice" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#548da1"/>
+      <stop offset="1" stop-color="#8bc2cf"/>
+    </linearGradient>
+    <linearGradient id="copper" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#8f392e"/>
+      <stop offset="1" stop-color="#d66b2c"/>
+    </linearGradient>
+    <pattern id="warningHatch" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(35)">
+      <rect width="4" height="8" fill="#d64b42" opacity="0.22"/>
+    </pattern>
+    <pattern id="screenLines" width="4" height="4" patternUnits="userSpaceOnUse">
+      <rect width="4" height="1" fill="#eee6d4" opacity="0.045"/>
+    </pattern>
+    <filter id="softGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="2" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <clipPath id="crtClip"><rect x="410" y="12" width="358" height="56" rx="5"/></clipPath>
+    <clipPath id="recoverPortrait"><rect x="20" y="151" width="256" height="77" rx="3"/></clipPath>
+    <clipPath id="createPortrait"><rect x="292" y="151" width="256" height="77" rx="3"/></clipPath>
+    <clipPath id="finishPortrait"><rect x="564" y="151" width="260" height="77" rx="3"/></clipPath>
+    <style>
+      text { font-family: "Arial Narrow", "Roboto Condensed", Arial, sans-serif; }
+      text:not([fill]) { fill: #eee6d4; }
+      .label { font-size: 8px; font-weight: 700; letter-spacing: 1.25px; }
+      .micro { font-size: 7px; font-weight: 700; letter-spacing: .7px; }
+      .small { font-size: 9px; font-weight: 700; letter-spacing: .55px; }
+      .value { font-size: 15px; font-weight: 800; letter-spacing: .4px; }
+      .score { font-size: 25px; font-weight: 900; }
+      .outline { fill: none; stroke: #7d9bab; stroke-width: 1; }
+      .panel { fill: url(#glass); stroke: #315365; stroke-width: 1; }
+      .hair { fill: #172b39; stroke: #071821; stroke-width: 2; stroke-linejoin: round; }
+      .skin { fill: #d7aa8d; stroke: #071821; stroke-width: 1.7; stroke-linejoin: round; }
+      .shadow { fill: #a66d62; }
+      .uniform { fill: #496b5c; stroke: #071821; stroke-width: 2; stroke-linejoin: round; }
+      .ink { stroke: #071821; stroke-width: 1.5; stroke-linecap: round; fill: none; }
+    </style>
+  </defs>
+
+  <!-- 844 × 390 landscape stage -->
+  <rect width="844" height="390" fill="#06151e"/>
+  <rect x="8" y="4" width="828" height="382" rx="10" fill="url(#shell)" stroke="#496778" stroke-width="1" stroke-dasharray="2 4" opacity="0.98"/>
+  <path d="M16 72H828M500 78V122M516 276V378" stroke="#6c8795" stroke-opacity="0.17"/>
+
+  <!-- TOP RAIL: x16 y8 w812 h64 -->
+  <g aria-label="Top rail">
+    <path d="M22 8H126L132 14V66L126 72H22L16 66V14Z" class="panel"/>
+    <text x="26" y="24" class="label" fill="#f2c84b">SINBIN</text>
+    <text x="26" y="58" class="score">1</text>
+    <path d="M53 33H119" stroke="#a64732" stroke-width="3"/>
+    <text x="53" y="47" class="small">HOME</text>
+    <text x="53" y="59" class="micro" fill="#9fb4bd">FIRST TO 3</text>
+
+    <rect x="138" y="8" width="140" height="64" rx="5" class="panel"/>
+    <text x="148" y="23" class="label" fill="#9fb4bd">RESOLUTION</text>
+    <text x="148" y="51" font-size="23" font-weight="900">04 <tspan font-size="12" fill="#9fb4bd">/ 12</tspan></text>
+    <rect x="231" y="16" width="37" height="16" rx="8" fill="#eee6d4"/>
+    <text x="249.5" y="27" text-anchor="middle" class="micro" fill="#0c2638">5 SEC</text>
+    <text x="231" y="58" class="micro" fill="#79afc1">CONTROL</text>
+
+    <path d="M290 8H394L400 14V66L394 72H290L284 66V14Z" class="panel"/>
+    <text x="294" y="24" class="label" fill="#d66b2c">THE VICE</text>
+    <text x="390" y="58" text-anchor="end" class="score">0</text>
+    <path d="M294 33H367" stroke="#d66b2c" stroke-width="3"/>
+    <text x="294" y="47" class="small">VISITOR</text>
+    <text x="294" y="59" class="micro" fill="#9fb4bd">FORECHECK</text>
+
+    <!-- Atmospheric CRT, never interactive -->
+    <rect x="406" y="8" width="366" height="64" rx="7" fill="#272c2c" stroke="#9d8060" stroke-width="1.5"/>
+    <rect x="410" y="12" width="358" height="56" rx="5" fill="#9bbcae" stroke="#071821" stroke-width="2"/>
+    <g clip-path="url(#crtClip)">
+      <rect x="410" y="12" width="358" height="56" fill="#153f43"/>
+      <ellipse cx="589" cy="40" rx="142" ry="55" fill="#527e79" opacity="0.55"/>
+      <path d="M435 18V64M744 18V64M435 40H744M589 13V67" stroke="#d5ded2" stroke-width="1" opacity="0.52"/>
+      <circle cx="589" cy="40" r="12" fill="none" stroke="#d5ded2" opacity="0.5"/>
+      <path d="M531 50l7-14 10 5 7-13m-17 8-10-6m20 11 13 8" stroke="#071821" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+      <circle cx="555" cy="25" r="5" fill="#eee6d4" stroke="#071821" stroke-width="2"/>
+      <path d="M638 50l-4-17 12-3 6-12m-18 15-11-4m23 1 13 10" stroke="#a64732" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+      <circle cx="653" cy="16" r="5" fill="#eee6d4" stroke="#071821" stroke-width="2"/>
+      <path d="M553 23Q603 3 650 15" fill="none" stroke="#f2c84b" stroke-width="2" stroke-dasharray="4 3"/>
+      <path d="M646 15l-8-1 4 7" fill="none" stroke="#f2c84b" stroke-width="2"/>
+      <rect x="410" y="12" width="358" height="56" fill="url(#screenLines)"/>
+      <text x="420" y="63" class="micro" fill="#eee6d4">LIVE FEED · THE VICE COLLAPSES HIGH</text>
+    </g>
+
+    <rect x="778" y="8" width="50" height="64" rx="5" fill="#173548" stroke="#8aa0aa"/>
+    <rect x="792" y="24" width="7" height="22" rx="1" fill="#eee6d4"/>
+    <rect x="807" y="24" width="7" height="22" rx="1" fill="#eee6d4"/>
+    <text x="803" y="61" text-anchor="middle" class="micro" fill="#9fb4bd">PAUSE</text>
+  </g>
+
+  <!-- METERS: x16 y78 w484 h44 -->
+  <g aria-label="Pressure Chain and Threat meters">
+    <rect x="16" y="78" width="184" height="44" rx="5" class="panel"/>
+    <text x="25" y="93" class="label" fill="#79afc1">PRESSURE</text>
+    <text x="190" y="96" text-anchor="end" class="value">63</text>
+    <rect x="25" y="104" width="165" height="8" rx="4" fill="#06151e" stroke="#416172"/>
+    <rect x="26" y="105" width="103" height="6" rx="3" fill="url(#ice)"/>
+    <path d="M157 102V114" stroke="#eee6d4" stroke-width="1" opacity="0.4"/>
+
+    <rect x="206" y="78" width="104" height="44" rx="5" class="panel"/>
+    <text x="215" y="93" class="label" fill="#f2c84b">CHAIN</text>
+    <text x="300" y="96" text-anchor="end" class="value">×2.34</text>
+    <circle cx="231" cy="109" r="4" fill="none" stroke="#79afc1" stroke-width="2"/>
+    <circle cx="258" cy="109" r="4" fill="none" stroke="#f2c84b" stroke-width="2"/>
+    <circle cx="285" cy="109" r="4" fill="none" stroke="#d66b2c" stroke-width="2"/>
+    <path d="M235 109H254M262 109H281" stroke="#eee6d4" stroke-width="2"/>
+
+    <rect x="316" y="78" width="184" height="44" rx="5" class="panel"/>
+    <text x="325" y="93" class="label" fill="#d66b2c">THREAT</text>
+    <text x="490" y="96" text-anchor="end" class="value">41</text>
+    <rect x="325" y="104" width="165" height="8" rx="4" fill="#06151e" stroke="#684438"/>
+    <rect x="326" y="105" width="67" height="6" rx="3" fill="url(#copper)"/>
+    <path d="M457 102V114" stroke="#eee6d4" stroke-width="1" opacity="0.4"/>
+  </g>
+
+  <!-- DISRUPTION: x506 y78 w322 h44 -->
+  <g aria-label="Upcoming disruption and countdown">
+    <path d="M512 78H822L828 84V116L822 122H512L506 116V84Z" fill="#1a2f3a" stroke="#d66b2c"/>
+    <rect x="506" y="78" width="6" height="44" fill="#d66b2c"/>
+    <text x="520" y="92" class="micro" fill="#d66b2c">NEXT 04</text>
+    <text x="520" y="107" class="small">HIGH FORECHECK</text>
+    <text x="520" y="117" font-size="7" font-weight="600" fill="#b8c5c9">ABSORB · OUTRUN · SPEND CHAIN</text>
+    <path d="M740 84V116" stroke="#4c6570"/>
+    <text x="817" y="108" text-anchor="end" font-size="25" font-weight="900" fill="#f2c84b">3.4<tspan font-size="11">s</tspan></text>
+  </g>
+
+  <!-- ACTIVE LINE: x16 y128 w812 h142 -->
+  <g aria-label="Active line with substitution destination preview">
+    <!-- Recover / direct -->
+    <path d="M22 128H274L280 134V264L274 270H22L16 264V134Z" fill="#102c3c" stroke="#79afc1" stroke-width="2.5" filter="url(#softGlow)"/>
+    <rect x="20" y="132" width="256" height="16" rx="2" fill="#496b5c"/>
+    <text x="28" y="144" class="label">RECOVER</text>
+    <rect x="202" y="132" width="74" height="16" rx="2" fill="#79afc1"/>
+    <text x="239" y="143.5" text-anchor="middle" class="micro" fill="#071821">DIRECT ✓</text>
+    <g clip-path="url(#recoverPortrait)">
+      <rect x="20" y="151" width="256" height="77" fill="#234b5b"/>
+      <path d="M20 211Q92 183 158 205T276 190V228H20Z" fill="#79afc1" opacity="0.12"/>
+      <circle cx="148" cy="180" r="25" class="skin"/>
+      <path d="M119 180Q121 148 149 150Q178 149 181 181L171 171 167 159Q142 174 122 168Z" class="hair"/>
+      <path d="M130 192L132 204 105 220H194L165 204 166 191Z" class="skin"/>
+      <path d="M105 220Q116 202 132 200L149 212 165 200Q183 203 194 220L205 233H94Z" class="uniform"/>
+      <path d="M149 212V232M118 207L129 219M179 208L169 220" class="ink" opacity="0.65"/>
+      <path d="M132 182q6 4 12 0m13 0q6 4 11 0M147 194q5 3 10 0" class="ink"/>
+      <path d="M124 173q10-7 19-2m14 0q9-5 16 2" class="ink"/>
+      <text x="30" y="218" class="micro" fill="#9fc8d5">ABSORBS THE ENTRY</text>
+    </g>
+    <rect x="20" y="231" width="256" height="35" fill="#0b202c"/>
+    <text x="28" y="246" font-size="12" font-weight="900">NYX <tspan fill="#9fb4bd" font-size="8">#13</tspan></text>
+    <text x="268" y="245" text-anchor="end" class="micro" fill="#9fb4bd">ENERGY 7 / 9</text>
+    <rect x="28" y="253" width="118" height="5" rx="2" fill="#06151e"/>
+    <rect x="28" y="253" width="92" height="5" rx="2" fill="#79afc1"/>
+    <text x="268" y="259" text-anchor="end" class="micro" fill="#79afc1">CLEAN HANDOFF</text>
+
+    <!-- Create / bridge -->
+    <path d="M294 128H546L552 134V264L546 270H294L288 264V134Z" fill="#102c3c" stroke="#f2c84b" stroke-width="2.5"/>
+    <path d="M294 130H546M290 136V262M550 136V262M294 268H546" fill="none" stroke="#79afc1" stroke-width="1" stroke-dasharray="10 3"/>
+    <rect x="292" y="132" width="256" height="16" rx="2" fill="#2e6680"/>
+    <text x="300" y="144" class="label">CREATE</text>
+    <rect x="466" y="132" width="82" height="16" rx="2" fill="#f2c84b"/>
+    <text x="501" y="143.5" text-anchor="middle" class="micro" fill="#071821">BRIDGE</text>
+    <ellipse cx="532.5" cy="139.5" rx="4" ry="2.6" fill="none" stroke="#071821" stroke-width="1.2" transform="rotate(-18 532.5 139.5)"/>
+    <ellipse cx="538.5" cy="139.5" rx="4" ry="2.6" fill="none" stroke="#071821" stroke-width="1.2" transform="rotate(18 538.5 139.5)"/>
+    <g clip-path="url(#createPortrait)">
+      <rect x="292" y="151" width="256" height="77" fill="#394b55"/>
+      <path d="M292 216Q363 180 426 204T548 185V228H292Z" fill="#d66b2c" opacity="0.15"/>
+      <circle cx="421" cy="181" r="24" class="skin"/>
+      <path d="M397 186Q387 159 408 147Q431 137 447 157L444 174 433 158Q414 174 397 169Z" class="hair"/>
+      <path d="M406 192L408 204 381 220H467L436 204 438 190Z" class="skin"/>
+      <path d="M381 220Q391 203 408 200L422 213 436 200Q455 204 467 220L477 233H370Z" fill="#a64732" stroke="#071821" stroke-width="2"/>
+      <path d="M422 213V232M396 207L405 219M451 207L439 220" class="ink" opacity="0.65"/>
+      <path d="M404 181q6 4 11 0m13 0q6 4 11 0M418 194q5 3 10-1" class="ink"/>
+      <path d="M399 172q9-6 16-2m13 0q8-5 15 2" class="ink"/>
+      <text x="302" y="218" class="micro" fill="#efbc9c">RELAY WINDOW OPEN</text>
+    </g>
+    <rect x="292" y="231" width="256" height="35" fill="#0b202c"/>
+    <text x="300" y="246" font-size="12" font-weight="900">SABLE <tspan fill="#9fb4bd" font-size="8">#08</tspan></text>
+    <text x="540" y="245" text-anchor="end" class="micro" fill="#9fb4bd">ENERGY 5 / 8</text>
+    <rect x="300" y="253" width="118" height="5" rx="2" fill="#06151e"/>
+    <rect x="300" y="253" width="74" height="5" rx="2" fill="#f2c84b"/>
+
+    <!-- Finish / unsupported -->
+    <path d="M566 128H822L828 134V264L822 270H566L560 264V134Z" fill="#102c3c" stroke="#d64b42" stroke-width="2.5" stroke-dasharray="8 4"/>
+    <path d="M560 128L828 270M828 128L560 270" stroke="url(#warningHatch)" opacity="0.15"/>
+    <rect x="564" y="132" width="260" height="16" rx="2" fill="#a64732"/>
+    <text x="572" y="144" class="label">FINISH</text>
+    <rect x="730" y="132" width="94" height="16" rx="2" fill="#d64b42"/>
+    <text x="777" y="143.5" text-anchor="middle" class="micro">BREAKS CHAIN ×</text>
+    <g clip-path="url(#finishPortrait)">
+      <rect x="564" y="151" width="260" height="77" fill="#4a302c"/>
+      <path d="M564 212Q628 187 694 202T824 181V228H564Z" fill="#a64732" opacity="0.18"/>
+      <circle cx="694" cy="181" r="24" class="skin"/>
+      <path d="M670 179Q668 150 693 149Q718 148 721 177L713 168 708 159Q692 168 671 166Z" fill="#d8c3a1" stroke="#071821" stroke-width="2"/>
+      <path d="M679 192L681 204 654 220H740L709 204 711 190Z" class="skin"/>
+      <path d="M654 220Q664 203 681 200L695 213 709 200Q728 204 740 220L750 233H643Z" fill="#d66b2c" stroke="#071821" stroke-width="2"/>
+      <path d="M695 213V232M669 207L678 219M724 207L712 220" class="ink" opacity="0.65"/>
+      <path d="M677 181q6 4 11 0m13 0q6 4 11 0M691 194q5 3 10-1" class="ink"/>
+      <text x="574" y="218" class="micro" fill="#e79a88">CREATE → FINISH LOST</text>
+    </g>
+    <rect x="564" y="231" width="260" height="35" fill="#0b202c"/>
+    <text x="572" y="246" font-size="12" font-weight="900">LISEL <tspan fill="#9fb4bd" font-size="8">#27</tspan></text>
+    <text x="816" y="245" text-anchor="end" class="micro" fill="#9fb4bd">ENERGY 6 / 8</text>
+    <rect x="572" y="253" width="118" height="5" rx="2" fill="#06151e"/>
+    <rect x="572" y="253" width="88" height="5" rx="2" fill="#d66b2c"/>
+    <text x="816" y="259" text-anchor="end" class="micro" fill="#d64b42">UNSUPPORTED EXIT</text>
+
+    <!-- Directional handoff marks -->
+    <path d="M280 196H288M284 192l4 4-4 4" stroke="#eee6d4" stroke-width="1.5" fill="none"/>
+    <path d="M552 196H560M556 192l4 4-4 4" stroke="#eee6d4" stroke-width="1.5" fill="none"/>
+  </g>
+
+  <!-- Causal / preview chip: x326 y258 w192 h18 -->
+  <g aria-label="Current preview explanation">
+    <path d="M332 258H512L518 264V270L512 276H332L326 270V264Z" fill="#eee6d4" stroke="#f2c84b" stroke-width="1.5"/>
+    <text x="422" y="270" text-anchor="middle" class="micro" fill="#0c2638">VIOLETTA IN · CHOOSE DESTINATION</text>
+  </g>
+
+  <!-- BENCH: x16 y276 w500 h102 -->
+  <g aria-label="Bench choices">
+    <rect x="16" y="276" width="500" height="102" rx="6" fill="#091e2a" stroke="#315365"/>
+    <rect x="16" y="276" width="500" height="15" rx="6" fill="#173548"/>
+    <text x="24" y="287" class="label">BENCH · INCOMING FIRST</text>
+    <text x="508" y="287" text-anchor="end" class="micro" fill="#9fb4bd">TAP ACTIVE SLOT TO COMMIT</text>
+
+    <!-- Selected Violetta -->
+    <path d="M24 295H174L178 299V370L174 374H24L20 370V299Z" fill="#163b4a" stroke="#f2c84b" stroke-width="2.5" filter="url(#softGlow)"/>
+    <rect x="24" y="299" width="54" height="56" rx="3" fill="#2d5b67"/>
+    <circle cx="51" cy="318" r="12" fill="#d7aa8d" stroke="#071821" stroke-width="1.5"/>
+    <path d="M39 320Q35 303 50 302Q66 301 65 321L59 313Q49 319 40 313Z" fill="#a64732" stroke="#071821" stroke-width="1.5"/>
+    <path d="M31 354Q35 332 50 331Q67 332 72 354Z" fill="#a64732" stroke="#071821" stroke-width="1.5"/>
+    <text x="86" y="310" class="micro" fill="#f2c84b">SELECTED</text>
+    <text x="86" y="325" font-size="11" font-weight="900">VIOLETTA</text>
+    <text x="86" y="338" class="micro" fill="#79afc1">BRIDGE · FLEX</text>
+    <text x="86" y="353" class="micro" fill="#9fb4bd">ENERGY 8 / 8</text>
+    <rect x="86" y="360" width="82" height="5" rx="2" fill="#06151e"/>
+    <rect x="86" y="360" width="82" height="5" rx="2" fill="#f2c84b"/>
+    <text x="171" y="372" text-anchor="end" font-size="6.5" font-weight="700" fill="#f2c84b">TAP AGAIN TO CANCEL</text>
+
+    <!-- Bench card 2 -->
+    <path d="M189 295H339L343 299V370L339 374H189L185 370V299Z" fill="#102c3c" stroke="#426173"/>
+    <rect x="189" y="299" width="54" height="56" rx="3" fill="#314853"/>
+    <circle cx="216" cy="318" r="12" fill="#b98570" stroke="#071821" stroke-width="1.5"/>
+    <path d="M204 318Q204 302 217 302Q231 303 229 321L223 311 207 312Z" fill="#132531" stroke="#071821" stroke-width="1.5"/>
+    <path d="M196 354Q200 332 216 331Q232 332 237 354Z" fill="#496b5c" stroke="#071821" stroke-width="1.5"/>
+    <text x="251" y="311" class="micro" fill="#9fb4bd">BENCH 02</text>
+    <text x="251" y="326" font-size="11" font-weight="900">RUNE</text>
+    <text x="251" y="339" class="micro" fill="#79afc1">HANDOFF · R</text>
+    <text x="251" y="354" class="micro" fill="#9fb4bd">ENERGY 7 / 9</text>
+    <rect x="251" y="361" width="82" height="5" rx="2" fill="#06151e"/>
+    <rect x="251" y="361" width="64" height="5" rx="2" fill="#79afc1"/>
+
+    <!-- Bench card 3 -->
+    <path d="M358 295H508L512 299V370L508 374H358L354 370V299Z" fill="#102c3c" stroke="#426173"/>
+    <rect x="358" y="299" width="54" height="56" rx="3" fill="#4b3940"/>
+    <circle cx="385" cy="318" r="12" fill="#c49576" stroke="#071821" stroke-width="1.5"/>
+    <path d="M373 317Q373 301 385 301Q401 302 398 322L393 312Q383 316 374 311Z" fill="#d8c3a1" stroke="#071821" stroke-width="1.5"/>
+    <path d="M365 354Q369 332 385 331Q401 332 406 354Z" fill="#d66b2c" stroke="#071821" stroke-width="1.5"/>
+    <text x="420" y="311" class="micro" fill="#9fb4bd">BENCH 03</text>
+    <text x="420" y="326" font-size="11" font-weight="900">FJORD</text>
+    <text x="420" y="339" class="micro" fill="#d66b2c">FINISH · F</text>
+    <text x="420" y="354" class="micro" fill="#9fb4bd">ENERGY 6 / 8</text>
+    <rect x="420" y="361" width="82" height="5" rx="2" fill="#06151e"/>
+    <rect x="420" y="361" width="61" height="5" rx="2" fill="#d66b2c"/>
+  </g>
+
+  <!-- ACTION DECK: x522 y276 w306 h102 -->
+  <g aria-label="Mutually exclusive emergency actions">
+    <path d="M528 276H699L705 282V372L699 378H528L522 372V282Z" fill="#173e52" stroke="#79afc1" stroke-width="1.5"/>
+    <text x="536" y="292" class="label" fill="#79afc1">DUMP &amp;</text>
+    <text x="536" y="312" font-size="16" font-weight="900">FULL CHANGE</text>
+    <path d="M536 322H691" stroke="#79afc1" opacity="0.55"/>
+    <text x="536" y="337" class="micro">SURRENDER PRESSURE</text>
+    <text x="536" y="349" class="micro">RESET CHAIN</text>
+    <text x="536" y="361" class="micro">+ REGROUP THREAT</text>
+    <text x="691" y="369" text-anchor="end" class="micro" fill="#9fb4bd">ONE-TAP COMMIT</text>
+
+    <path d="M717 276H822L828 282V372L822 378H717L711 372V282Z" fill="#612e2a" stroke="#d66b2c" stroke-width="1.5"/>
+    <path d="M732 292H807V322H732Z" fill="none" stroke="#d66b2c" stroke-width="2"/>
+    <path d="M745 292V322M757 292V322M769 292V322M781 292V322M793 292V322" stroke="#d66b2c" stroke-width="1"/>
+    <text x="769.5" y="338" text-anchor="middle" class="label" fill="#d66b2c">SIN BIN</text>
+    <text x="769.5" y="352" text-anchor="middle" class="micro">OVERCHARGE</text>
+    <text x="769.5" y="363" text-anchor="middle" class="micro">2 RES EXPOSURE</text>
+    <text x="769.5" y="373" text-anchor="middle" font-size="6.5" font-weight="700" fill="#d9a48d">TAP, THEN SKATER</text>
+  </g>
+
+  <!-- Reference-canvas registration marks -->
+  <path d="M2 8H10M8 2V10M834 8H842M836 2V10M2 382H10M8 380V388M834 382H842M836 380V388" stroke="#f2c84b" opacity="0.5"/>
+</svg>
