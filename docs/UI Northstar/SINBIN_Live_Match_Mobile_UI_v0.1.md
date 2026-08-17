@@ -8,6 +8,20 @@
 **Large-phone validation canvas:** 915 × 412 logical pixels  
 **Mechanic baseline:** experiment/live-shift-lab-3b, inspected 2026-08-13
 
+## Prototype asset status
+
+The character images and character-data files added with the first UI reference commit are examples and placeholders only. They are not production-ready assets or working application endpoints.
+
+- Files under `docs/Characters/` are visual references for art direction and should not be loaded by the application.
+- The duplicated JPG reference sheets under `public/assets/characters/` should be deleted before production integration. They are not optimized live-card assets.
+- Create purpose-built, game-ready portrait crops in the approved final art style. Export transparent PNGs where the UI needs isolated character silhouettes; use an appropriately optimized web format when transparency is not required.
+- Standardize each live portrait's crop, eye-line, silhouette, lighting, and resolution so mixed characters remain equally readable in active and bench cards.
+- Optimize dimensions and file sizes for the actual responsive card slots, with only the required density variants shipped to the client.
+- `data/characters/nyx.json` and `data/characters/violetta.json` are empty placeholders. Replace them with validated manifests before importing or exposing them as endpoints; until then, code must not depend on them.
+- Nyx and the remaining roster art are incomplete. Do not treat Violetta's JPG references as the production style or mix them with unfinished placeholders in a release build.
+
+The UI geometry and interaction states should be validated with temporary rectangles or neutral stand-ins before production portraits are integrated.
+
 ## 1. Purpose
 
 This specification defines the live-match screen that will become the visual and interaction foundation for SINBIN.

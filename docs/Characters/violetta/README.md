@@ -11,6 +11,8 @@ Repository authority: This README is the canonical machine-readable character re
 
 Repository Use
 
+PROTOTYPE ASSET NOTICE The supplied JPG and PNG images are art-direction references and examples, not optimized game assets. The copies currently under `public/assets/characters/violetta/` are temporary placeholders and should be removed before production integration. Create consistent game-ready portrait crops in the approved final art style, using transparent PNG where isolated silhouettes are required and optimized dimensions/formats for each live UI slot.
+
 Keep this folder under docs/characters/violetta/ as reference material for artists, writers and Codex.
 
 Put optimized game-ready crops under public/assets/characters/violetta/; do not make the application load the large reference sheets from this folder.

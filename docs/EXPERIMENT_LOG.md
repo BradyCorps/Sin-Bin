@@ -737,6 +737,33 @@ Do not expand into collection or progression unless two distinct constructed mac
 
 ---
 
+## UI-P0 — Rectangle Presentation Gate
+
+**Date:** 2026-08-14
+**Branch:** `experiment/live-shift-lab-4`
+**Commit:** Working tree after `827993d`; not yet committed
+**Build or playable URL:** Local development build
+
+**Question:** Can the proven live-rewire loop remain fast, legible, and enjoyable inside the intended landscape game-page geometry before character art and LSL-4 construction are layered onto it?
+
+**Hypothesis:** A compact, mockup-aligned rectangle UI will improve decision scanning without changing decisions, outcomes, timing, or deterministic replay.
+
+**Changed variables:** Live-match information architecture, incoming-first selection order, consequence previews, compact causal feedback, landscape viewport geometry, and pause/obscure presentation.
+
+**Controlled variables:** LSL-3B engine rules, roster and opponent data, five- and eight-second cadence, one decision per resolution, Pressure, Threat, Chain, fatigue, Full Change, SIN BIN outcomes, diagnosis, campaign sequence, and deterministic replay.
+
+**Implementation state:** Rectangle geometry implemented as a mobile-landscape-first stage. Pre-game roster and cadence selection now appears as an obscuring lock-in modal rather than consuming match-layout space. Character portraits remain lettered stand-ins. The engine exposes its existing substitution support result through a read-only preview function; commitment still uses the authoritative substitution function.
+
+**Validation completed:** Production build, engine tests, rendered HTML test, lint, and `git diff --check` pass. No hands-on feel result has been recorded yet.
+
+**Observed behaviour:** Pending playtest at 667 × 375, 844 × 390, and 915 × 412.
+
+**Decision:** Needs more evidence
+
+**Next test:** Play the Relay and Overload starting machines at both cadences. Record whether incoming-first previews reduce scanning time, whether the compact causal call remains legible during countdown pressure, and whether any panel styling distracts from the live chain.
+
+---
+
 ## Result-entry template
 
 Copy this section for every completed experiment.

@@ -99,3 +99,16 @@ Flag disruptions with only one practical answer, dominant policies that always r
 ### Protect the live loop
 
 Flag timer duplication, stale state, input accepted after a run ends, replay conditions that differ from the original run, or changes that pause the decision clock unintentionally.
+
+## SINBIN live-match UI authorities
+
+Before changing the live-match screen, read:
+
+- `docs/UI Northstar/SINBIN_Live_Match_Mobile_UI_v0.1.md`
+- `docs/UI Northstar/SINBIN_Live_Match_Mobile_UI_v0.1_wireframe.svg`
+- `docs/UI Northstar/gamepage_UI_mockup.png`
+- `docs/UI Northstar/live-match/SINBIN_Codex_Live_Match_UI_Correction_Brief_v1.0.md`
+
+Authority is divided by subject: Markdown for behaviour/information, SVG for geometry, PNG for appearance, approved character assets/bibles for identity, and the engine for outcomes.
+
+Never accept a live-match UI change based only on build/test success. Run browser validation at 667 × 375, 844 × 390, and 915 × 412; verify no scrolling or unintended intersections; and return screenshots for visual comparison. Preserve the deterministic engine unless the task explicitly changes gameplay.

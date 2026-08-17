@@ -3,11 +3,19 @@ import test from "node:test";
 import {
   CADENCES, PENALTY_RESOLUTIONS, PLAYERS, RECRUIT_OFFERS, SEQUENCES,
   advanceClock, createGame, diagnosis, diagnosisSummary, dumpAndChange, getDisruption,
-  initialLineup, moveBenchSkater, recruitIntoLineup, resolve, selectSlot,
+  getSubstitutionPreview, initialLineup, moveBenchSkater, recruitIntoLineup, resolve, selectSlot,
   startGame, substitute, takePenalty,
 } from "../app/game-engine.mjs";
 
 function running(conditions) { return startGame(createGame(conditions)); }
+
+test("substitution previews use the same direct, bridge and break rules as resolution", () => {
+  const state = running({ roster: "overload" });
+  assert.equal(getSubstitutionPreview(state, 0, 0).kind, "direct");
+  assert.equal(getSubstitutionPreview(state, 1, 1).kind, "bridge");
+  assert.equal(getSubstitutionPreview(state, 2, 1).kind, "break");
+  assert.equal(getSubstitutionPreview(state, 0, 3), null);
+});
 
 test("identical conditions and decisions replay deterministically", () => {
   function play() {

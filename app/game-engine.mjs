@@ -114,13 +114,21 @@ export function createGame(conditions = {}) {
 export function startGame(state) { if (state.phase !== "ready") return state; const next = copy(state); next.phase = "running"; return next; }
 export function selectSlot(state, slot) { if (state.phase !== "running" || state.windowDecision || !state.active[slot]) return state; const next = copy(state); next.selectedSlot = next.selectedSlot === slot ? null : slot; return next; }
 
+export function getSubstitutionPreview(state, benchIndex, slot) {
+  const incomingId = state.bench[benchIndex]; const outgoingId = state.active[slot];
+  if (!incomingId || !outgoingId) return null;
+  const incoming = player(state, incomingId); const outgoing = player(state, outgoingId);
+  const bridge = incoming.tags.includes("bridge") || incoming.tags.includes("flex") || outgoing.tags.includes("handoff");
+  const natural = incoming.fit[slot] >= 5;
+  return { incomingId, outgoingId, slot, kind: bridge ? "bridge" : natural ? "direct" : "break", kept: natural || bridge };
+}
+
 export function substitute(state, benchIndex) {
   if (state.phase !== "running" || state.windowDecision || state.selectedSlot === null || !state.bench[benchIndex]) return state;
   const next = copy(state); const slot = next.selectedSlot; const outgoingId = next.active[slot]; const incomingId = next.bench[benchIndex];
   if (!outgoingId || !incomingId) return state;
-  const outgoing = player(next, outgoingId); const incoming = player(next, incomingId);
-  const bridge = incoming.tags.includes("bridge") || incoming.tags.includes("flex") || outgoing.tags.includes("handoff");
-  const natural = incoming.fit[slot] >= 5; const kept = natural || bridge;
+  const outgoing = player(next, outgoingId); const incoming = player(next, incomingId); const preview = getSubstitutionPreview(next, benchIndex, slot);
+  const bridge = preview.kind === "bridge"; const natural = incoming.fit[slot] >= 5; const kept = preview.kept;
   next.active[slot] = incomingId; next.bench[benchIndex] = outgoingId; next.selectedSlot = null; next.changedThisResolution = true; next.windowDecision = "substitution"; next.lastBridge = bridge;
   next.stats.substitutions += 1;
   if (incomingId === next.conditions.recruitId) next.stats.recruitEntries += 1;

@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
+import Image from "next/image";
 import {
   CADENCES, PLAYERS, RECRUIT_OFFERS, RUN_RESOLUTIONS, SEQUENCES,
   advanceClock, createGame, diagnosis, diagnosisSummary, dumpAndChange, getDisruption,
-  initialLineup, moveBenchSkater, recruitIntoLineup, selectSlot,
+  getSubstitutionPreview, initialLineup, moveBenchSkater, recruitIntoLineup, selectSlot,
   startGame, substitute, takePenalty,
 } from "./game-engine.mjs";
 
@@ -36,22 +37,49 @@ export default function Home() {
   const [releaseId, setReleaseId] = useState<string | null>(null);
   const [recruitConfirmed, setRecruitConfirmed] = useState(false);
   const [runHistory, setRunHistory] = useState<Array<{ game: number; result: "win" | "tie" | "loss"; diagnosis: string[]; recruit?: string; released?: string }>>([]);
+  const [selectedBench, setSelectedBench] = useState<number | null>(null);
+  const [previewResolution, setPreviewResolution] = useState(0);
+  const [penaltyMode, setPenaltyMode] = useState(false);
+  const [paused, setPaused] = useState(false);
+  const [comparisonFixture, setComparisonFixture] = useState(false);
   const timer = useRef<ReturnType<typeof setInterval> | null>(null);
   const players = PLAYERS[game.conditions.roster as RosterId];
   const disruption = getDisruption(game);
-  const selected = game.selectedSlot === null ? null : game.active[game.selectedSlot];
-  const selectedPlayer = selected ? players[selected] : null;
-  const clockPercent = game.clockMs / CADENCES[game.conditions.cadence as CadenceId] * 100;
 
   useEffect(() => {
     if (timer.current) clearInterval(timer.current);
     timer.current = null;
-    if (game.phase === "running") timer.current = setInterval(() => setGame((current) => advanceClock(current, 100)), 100);
+    if (game.phase === "running" && !paused && !comparisonFixture) timer.current = setInterval(() => {
+      if (!document.hidden && !window.matchMedia("(orientation: portrait)").matches) setGame((current) => advanceClock(current, 100));
+    }, 100);
     return () => { if (timer.current) clearInterval(timer.current); timer.current = null; };
-  }, [game.phase, game.conditions.roster, game.conditions.sequence, game.conditions.cadence]);
+  }, [game.phase, game.conditions.roster, game.conditions.sequence, game.conditions.cadence, paused, comparisonFixture]);
 
-  const recentCauses = useMemo(() => game.events.filter((event: { type: string }) => ["failure", "fatigue", "chain-break"].includes(event.type)).slice(-3).reverse(), [game.events]);
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("fixture") !== "violetta-preview") return;
+    const fixtureTimer = window.setTimeout(() => {
+      const fixtureLineup = { active: ["nyx", "lux", "sabine"], bench: ["halley", "orla", "rook"] };
+      const fixture = startGame(createGame({ roster: "overload", sequence: "vice", cadence: "control", seed: 3, lineup: fixtureLineup }));
+      Object.assign(fixture, { pressure: 63, chain: 2.34, threat: 41, clockMs: 3400, resolution: 0, goalsFor: 1 });
+      setConditions({ roster: "overload", cadence: "control", seed: 3 });
+      setLineup(fixtureLineup);
+      setGame(fixture);
+      setPreviewResolution(0);
+      setSelectedBench(0);
+      setComparisonFixture(true);
+    }, 0);
+    return () => window.clearTimeout(fixtureTimer);
+  }, []);
+
+  useEffect(() => {
+    const obscure = () => { if (document.hidden || window.matchMedia("(orientation: portrait)").matches) setPaused(true); };
+    document.addEventListener("visibilitychange", obscure); window.addEventListener("orientationchange", obscure);
+    return () => { document.removeEventListener("visibilitychange", obscure); window.removeEventListener("orientationchange", obscure); };
+  }, []);
+
   const intermissionDiagnosis = diagnosisSummary(game);
+  const benchPreview = previewResolution === game.resolution && !game.windowDecision ? selectedBench : null;
+  const penaltyPreview = previewResolution === game.resolution && !game.windowDecision && penaltyMode;
 
   function resetCampaign(nextConditions = conditions) {
     const freshLineup = initialLineup(nextConditions.roster);
@@ -75,27 +103,70 @@ export default function Home() {
     setGame(startGame(createGame({ ...conditions, sequence: nextSequence, lineup, recruitId: chosenRecruit, seed: conditions.seed + nextNumber - 1 })));
   }
   function replayGame() { setScreen("game"); setGame(startGame(createGame(game.conditions))); }
+  function chooseBench(index: number) {
+    if (game.phase !== "running" || game.windowDecision) return;
+    setPreviewResolution(game.resolution); setPenaltyMode(false); setSelectedBench((current) => current === index && previewResolution === game.resolution ? null : index);
+  }
+  function chooseDestination(slot: number) {
+    if (game.phase !== "running" || game.windowDecision || !game.active[slot]) return;
+    if (benchPreview !== null) {
+      setGame((state) => substitute(selectSlot(state, slot), benchPreview)); setSelectedBench(null); return;
+    }
+    if (penaltyPreview) {
+      setGame((state) => takePenalty(selectSlot(state, slot))); setPenaltyMode(false);
+    }
+  }
 
-  return <main className="site-shell">
+  return <main className={`site-shell ${screen === "game" ? "match-mode" : ""}`}>
     <header className="masthead"><div><p className="eyebrow">SINBIN // MECHANIC TEST 03B</p><h1>THREE-GAME SHIFT</h1></div><div className="lab-thesis"><span>STABILIZATION</span><strong>Recruitment passed. Can the live loop resist generic play?</strong></div></header>
 
-    {game.phase === "ready" && <section className="condition-panel" aria-label="Campaign conditions">
-      <div><span className="label">STARTING MACHINE</span><div className="choice-grid two">{Object.entries(rosterCopy).map(([id, copy]) => <button key={id} className={conditions.roster === id ? "chosen" : ""} onClick={() => changeCondition("roster", id)}><strong>{copy.title}</strong><small>{copy.summary}</small></button>)}</div></div>
-      <div><span className="label">CONTROLLED CADENCE</span><div className="choice-grid two">{Object.entries(CADENCES).map(([id, ms]) => <button key={id} className={conditions.cadence === id ? "chosen" : ""} onClick={() => changeCondition("cadence", id)}><strong>{ms / 1000} SECONDS</strong><small>{id === "control" ? "Quick control" : "Slower planning condition"}</small></button>)}</div></div>
-      <p className="campaign-rule">Three games: The Vice → The Chase → Static Ice. Diagnose, recruit one face-up specialist, release one skater, order the bench, and operate the changed machine.</p>
-      <button className="primary-action" onClick={() => setGame(startGame)}>START GAME 1 // {rosterCopy[conditions.roster].title}</button>
-    </section>}
+    {game.phase === "ready" && !comparisonFixture && <div className="match-setup-backdrop"><section className="condition-panel match-setup" role="dialog" aria-modal="true" aria-labelledby="match-setup-title">
+      <header><span>SINBIN · LIVE SHIFT</span><h2 id="match-setup-title">LOCK IN THE MACHINE</h2><p>Choose the line identity and decision cadence before the clock starts.</p></header>
+      <div><span className="label">STARTING MACHINE</span><div className="choice-grid two">{Object.entries(rosterCopy).map(([id, copy]) => <button key={id} className={conditions.roster === id ? "chosen" : ""} onClick={() => changeCondition("roster", id)}><strong>{copy.title}</strong><small>{copy.summary}</small><i>{conditions.roster === id ? "SELECTED" : "SELECT"}</i></button>)}</div></div>
+      <div><span className="label">RESOLUTION CADENCE</span><div className="choice-grid two">{Object.entries(CADENCES).map(([id, ms]) => <button key={id} className={conditions.cadence === id ? "chosen" : ""} onClick={() => changeCondition("cadence", id)}><strong>{ms / 1000} SECONDS</strong><small>{id === "control" ? "Fast control condition" : "Slower planning condition"}</small><i>{conditions.cadence === id ? "SELECTED" : "SELECT"}</i></button>)}</div></div>
+      <p className="campaign-rule">THE VICE → THE CHASE → STATIC ICE · FIRST TO 3 · 12 RESOLUTIONS</p>
+      <button className="primary-action" onClick={() => setGame(startGame)}>START GAME 1 · {rosterCopy[conditions.roster].title} · {CADENCES[conditions.cadence] / 1000} SEC</button>
+    </section></div>}
 
-    <section className="campaign-ribbon"><span>GAME <b>{gameNumber}</b> / 3</span>{campaignSequences.map((id, index) => <i className={index + 1 === gameNumber ? "current" : index + 1 < gameNumber ? "done" : ""} key={id}>{SEQUENCES[id].name}</i>)}</section>
-    <section className="score-ribbon" aria-label="Game status"><div className="score-team ours"><span>SINBIN</span><strong>{game.goalsFor}</strong></div><div className="shift-readout"><span>RESOLUTION</span><strong>{Math.min(game.resolution + 1, RUN_RESOLUTIONS)} / {RUN_RESOLUTIONS}</strong></div><div className="score-team theirs"><strong>{game.goalsAgainst}</strong><span>{SEQUENCES[game.conditions.sequence as SequenceId].name}</span></div></section>
+    <div className="match-viewport"><section className={`match-stage ${comparisonFixture ? "comparison-fixture" : ""}`} aria-label="Live match">
+      <header className="match-rail">
+        <div className="team-panel home"><span>SIN BIN</span><small>HOME · FIRST TO 3</small><strong>{game.goalsFor}</strong></div>
+        <div className="resolution-panel"><span>RESOLUTION</span><strong>{String(comparisonFixture ? 4 : Math.min(game.resolution + 1, RUN_RESOLUTIONS)).padStart(2, "0")} <small>/ {RUN_RESOLUTIONS}</small></strong><i>{CADENCES[game.conditions.cadence as CadenceId] / 1000} SEC</i></div>
+        <div className="team-panel visitor"><span>{SEQUENCES[game.conditions.sequence as SequenceId].name}</span><small>VISITOR · GAME {gameNumber}/3</small><strong>{game.goalsAgainst}</strong></div>
+        <div className="crt-panel" aria-label="Atmospheric live feed"><span>LIVE FEED</span><div><i /><i /><i /></div><small>{game.feed[0]}</small></div>
+        <button className="stage-pause" onClick={() => setPaused(true)} aria-label="Pause match">Ⅱ<span>PAUSE</span></button>
+      </header>
 
-    <div className="game-layout"><section className="play-column">
-      <div className="meters-row"><div className="meter-block pressure-block"><div className="meter-label"><span>LIVE PRESSURE</span><strong>{Math.round(game.pressure)}</strong></div><div className="meter-track"><span style={{ width: `${Math.min(100, game.pressure)}%` }} /></div><small>100 = goal · bleeds continuously</small></div><div className="chain-block"><span>CHAIN</span><strong>×{game.chain.toFixed(2)}</strong><small>{game.conditions.roster === "relay" ? "Bridges grow it quickly" : "Charged pairs spend fatigue"}</small></div><div className="meter-block threat-block"><div className="meter-label"><span>COUNTER THREAT</span><strong>{Math.round(game.threat)}</strong></div><div className="meter-track"><span style={{ width: `${Math.min(100, game.threat)}%` }} /></div><small>100 = goal against</small></div></div>
-      <div className="disruption-card"><div><span className="label">NEXT // {Math.min(game.resolution + 1, RUN_RESOLUTIONS)}</span><strong>{disruption.name}</strong></div><div className="disruption-demand"><span>DEFENSIBLE FUTURES</span><strong>{disruption.hint}</strong></div><div className="clock-wrap"><div className="clock-text"><span>NEXT RESOLUTION</span><strong>{game.phase === "ready" ? "—" : `${(game.clockMs / 1000).toFixed(1)}s`}</strong></div><div className="clock-track"><span style={{ width: `${game.phase === "ready" ? 100 : clockPercent}%` }} /></div></div></div>
-      <section className="rink" aria-label="Active line"><div className="ice-label">ON THE ICE // {rosterCopy[game.conditions.roster as RosterId].title}</div><div className="active-line">{game.active.map((id: string | null, slot: number) => id ? <button key={id} disabled={game.phase !== "running"} aria-pressed={game.selectedSlot === slot} className={`player-card active-card ${game.selectedSlot === slot ? "selected" : ""}`} onClick={() => setGame((state) => selectSlot(state, slot))} style={{ "--accent": players[id].color } as CSSProperties}><span className="slot-kicker">{["RECOVER", "CREATE", "FINISH"][slot]}</span><div className="player-name-row"><strong>{players[id].name}</strong><small>{players[id].role}</small></div><div className="energy">{Array.from({ length: players[id].energy }, (_, i) => <span key={i} className={i < game.energy[id] ? "energy-pip filled" : "energy-pip"} />)}</div><span className="fit-line">R{players[id].fit[0]} · C{players[id].fit[1]} · F{players[id].fit[2]}</span><p>{players[id].tags.join(" · ").toUpperCase()}</p><span className="select-cue">{game.selectedSlot === slot ? "SELECTED" : "CLICK TO CHANGE"}</span></button> : <div className="player-card empty-slot" key={`empty-${slot}`}><strong>SHORT-HANDED</strong><small>{game.sinBin?.remaining} resolution(s) until return.</small></div>)}</div></section>
-      <section className="bench-section"><div className="section-title-row"><div><span className="label">VISIBLE BENCH // ORDER PRESERVED</span><h2>{selectedPlayer ? `REPLACE ${selectedPlayer.name}` : "SELECT ONE ACTIVE SKATER"}</h2></div></div><div className="bench-grid bench-grid-2a">{game.bench.map((id: string, index: number) => { const p = players[id]; return <button key={id} disabled={game.phase !== "running" || game.selectedSlot === null} className="bench-card" onClick={() => setGame((state) => substitute(state, index))} style={{ "--accent": p.color } as CSSProperties}><span className="bench-topline"><b>{index + 1} · {p.role}</b><i>{p.tags.join(" / ")}</i></span><strong>{p.name}</strong><div className="energy">{Array.from({ length: p.energy }, (_, i) => <span key={i} className={i < game.energy[id] ? "energy-pip filled" : "energy-pip"} />)}</div><span className="fit-line">R{p.fit[0]} · C{p.fit[1]} · F{p.fit[2]}</span></button>; })}</div></section>
-      <div className="action-deck action-deck-3b"><button className="secondary-action" disabled={game.phase !== "running" || Boolean(game.windowDecision)} onClick={() => setGame(dumpAndChange)}><span>{game.windowDecision ? `WINDOW COMMITTED: ${game.windowDecision.toUpperCase()}` : "DUMP & FULL CHANGE"}</span><small>Surrender up to 18 Pressure · reset Chain · clear 4 Threat · mutually exclusive action</small></button><button className="danger-action" disabled={game.phase !== "running" || Boolean(game.windowDecision) || !selectedPlayer || Boolean(game.sinBin) || Boolean(selected && game.penaltiesUsed.includes(selected))} onClick={() => setGame(takePenalty)}><span>{game.windowDecision ? `WINDOW COMMITTED: ${game.windowDecision.toUpperCase()}` : selectedPlayer ? `SEND ${selectedPlayer.name} TO THE SIN BIN` : "SELECT SKATER // INTENTIONAL PENALTY"}</span><small>State-scaled overcharge · two exposed resolutions · mutually exclusive action</small></button></div>
-    </section><aside className="side-column"><section className={`sin-bin ${game.sinBin ? "occupied" : ""}`}><div className="side-heading"><span>THE SIN BIN</span><strong>{game.sinBin ? `${game.sinBin.remaining} LEFT` : "EMPTY"}</strong></div><p className="empty-copy">{game.sinBin ? `${players[game.sinBin.id].name}: ${game.sinBin.conceded ? "return payoff halved" : "survive for full return"}.` : "Immediate power, two short resolutions, return trigger."}</p></section><section className="live-feed"><div className="side-heading"><span>LIVE CAUSAL CALL</span><strong>AUTO</strong></div><div className="feed-list">{game.feed.map((text: string, index: number) => <p className="feed-entry" key={`${text}-${index}`}>{text}</p>)}</div></section><section className="field-manual"><div className="side-heading"><span>FAILURE CAUSES</span><strong>{recentCauses.length}</strong></div><div className="feed-list">{recentCauses.length ? recentCauses.map((event: { text: string }, index: number) => <p className="feed-entry bad" key={index}>{event.text}</p>) : <p className="empty-copy">Failures name the broken link here.</p>}</div></section></aside></div>
+      <div className="stage-status">
+        <div className="stage-meter pressure"><span>PRESSURE</span><strong>{Math.round(game.pressure)}</strong><div><i style={{ width: `${Math.min(100, game.pressure)}%` }} /></div></div>
+        <div className="stage-chain"><span>CHAIN</span><strong>×{game.chain.toFixed(2)}</strong><div>○—○—○</div></div>
+        <div className="stage-meter threat"><span>THREAT</span><strong>{Math.round(game.threat)}</strong><div><i style={{ width: `${Math.min(100, game.threat)}%` }} /></div></div>
+        <div className="stage-disruption"><span>NEXT {String(comparisonFixture ? 4 : Math.min(game.resolution + 1, RUN_RESOLUTIONS)).padStart(2, "0")}</span><strong>{disruption.name}</strong><small>{disruption.hint}</small><b>{game.phase === "ready" ? "—" : `${(game.clockMs / 1000).toFixed(1)}s`}</b></div>
+      </div>
+
+      <div className="stage-active">
+        {game.active.map((id: string | null, slot: number) => {
+          if (!id) return <div className="stage-skater shorthanded" key={`empty-${slot}`}><span>{["RECOVER", "CREATE", "FINISH"][slot]}</span><strong>SHORT-HANDED</strong><small>{game.sinBin?.remaining} RES UNTIL RETURN</small></div>;
+          const p = players[id]; const enginePreview = benchPreview === null ? null : getSubstitutionPreview(game, benchPreview, slot);
+          const preview = comparisonFixture && benchPreview !== null ? { kind: ["direct", "bridge", "break"][slot] } : enginePreview;
+          const eligiblePenalty = penaltyPreview && !game.penaltiesUsed.includes(id) && !game.sinBin;
+          return <button key={id} onClick={() => chooseDestination(slot)} disabled={game.phase !== "running" || Boolean(game.windowDecision) || (benchPreview === null && !penaltyPreview)} className={`stage-skater ${preview?.kind ?? ""} ${eligiblePenalty ? "penalty-target" : ""}`} style={{ "--accent": p.color } as CSSProperties}>
+            <span>{["RECOVER", "CREATE", "FINISH"][slot]} <b>{preview ? preview.kind === "direct" ? "DIRECT ✓" : preview.kind === "bridge" ? "BRIDGE ∞" : "BREAKS CHAIN ×" : eligiblePenalty ? "OVERCHARGE" : ""}</b></span>
+            <div className={`portrait-frame portrait-${slot}`} aria-hidden="true"><span className="portrait-silhouette" /><small>{preview?.kind === "direct" ? "ABSORBS THE ENTRY" : preview?.kind === "bridge" ? "RELAY WINDOW OPEN" : preview?.kind === "break" ? "CREATE → FINISH LOST" : p.role.toUpperCase()}</small></div>
+            <footer><strong>{p.name} {comparisonFixture && id === "nyx" ? <em>#8</em> : ""}</strong><small>ENERGY {comparisonFixture ? ["7 / 9", "5 / 8", "6 / 8"][slot] : `${game.energy[id]} / ${p.energy}`}</small><div className="stage-energy">{Array.from({ length: comparisonFixture ? [9, 8, 8][slot] : p.energy }, (_, i) => <i key={i} className={i < (comparisonFixture ? [7, 5, 6][slot] : game.energy[id]) ? "filled" : ""} />)}</div></footer>
+          </button>;
+        })}
+      </div>
+
+      <div className="causal-chip">{game.windowDecision ? `DECISION COMMITTED · ${game.windowDecision.toUpperCase()}` : benchPreview !== null ? `${comparisonFixture ? "VIOLETTA" : players[game.bench[benchPreview]].name} IN · CHOOSE DESTINATION` : penaltyPreview ? "SIN BIN · CHOOSE ACTIVE SKATER" : game.feed[0]}</div>
+
+      <div className="stage-lower">
+        <section className="stage-bench"><h2>BENCH · INCOMING FIRST</h2><div>{game.bench.map((id: string, index: number) => { const p = players[id]; const isVioletta = comparisonFixture && index === 0; return <button key={id} onClick={() => chooseBench(index)} disabled={game.phase !== "running" || Boolean(game.windowDecision)} className={`${benchPreview === index ? "selected" : ""} ${isVioletta ? "violetta-card" : ""}`} style={{ "--accent": p.color } as CSSProperties}>{isVioletta ? <Image src="/assets/characters/violetta/violetta-live-card-placeholder-v1.png" alt="Violetta, player 57" width={60} height={73} unoptimized /> : <i aria-hidden="true"><span /></i>}<span><small>{benchPreview === index ? "SELECTED" : p.role.toUpperCase()}</small><strong>{isVioletta ? "VIOLETTA" : p.name}</strong><b>{isVioletta ? "BRIDGE · FLEX" : p.tags.slice(0, 2).join(" · ").toUpperCase()}</b><em>ENERGY {isVioletta ? "8 / 8" : `${game.energy[id]} / ${p.energy}`}</em></span></button>; })}</div></section>
+        <section className="stage-actions"><button disabled={game.phase !== "running" || Boolean(game.windowDecision)} onClick={() => { setSelectedBench(null); setPenaltyMode(false); setGame(dumpAndChange); }}><strong>DUMP &<br/>FULL CHANGE</strong><small>SURRENDER PRESSURE<br/>RESET CHAIN · +THREAT</small></button><button className={penaltyPreview ? "selected" : ""} disabled={game.phase !== "running" || Boolean(game.windowDecision) || Boolean(game.sinBin)} onClick={() => { setPreviewResolution(game.resolution); setSelectedBench(null); setPenaltyMode((value) => previewResolution === game.resolution ? !value : true); }}><strong>SIN BIN</strong><small>{game.sinBin ? `${game.sinBin.remaining} RES LEFT` : "OVERCHARGE\n2 RES EXPOSURE"}</small></button></section>
+      </div>
+
+      {paused && <div className="stage-obscure"><strong>PAUSED</strong><small>Tactical state obscured</small><button onClick={() => setPaused(false)}>RESUME</button></div>}
+    </section></div>
 
     {screen === "game" && game.phase === "ended" && <div className="result-backdrop"><section className={`result-card ${game.outcome?.result}`}><p className="eyebrow">GAME {gameNumber} DIAGNOSIS · {SEQUENCES[game.conditions.sequence as SequenceId].name}</p><h2>{game.outcome?.result === "win" ? "THE MACHINE WON" : game.outcome?.result === "tie" ? "THE MACHINE SURVIVED" : "THE PLAY CAME APART"}</h2><p className="result-subtitle">{game.outcome?.result === "tie" ? "The score finished level. Pressure and Threat remain diagnostic values, not a hidden tiebreaker." : game.outcome?.result === "win" ? "The machine finished ahead on goals." : "The opponent finished ahead on goals."}</p><div className="result-score"><strong>{game.goalsFor}</strong><span>—</span><strong>{game.goalsAgainst}</strong></div><div className="diagnosis-list">{diagnosis(game).map((line: string) => <p key={line}>{line}</p>)}</div><button className="primary-action" onClick={recordRun}>{gameNumber === 3 ? "COMPLETE THREE-GAME TEST" : "FACE THE RECRUITS"}</button><button className="text-action" onClick={replayGame}>Replay identical game</button></section></div>}
 
