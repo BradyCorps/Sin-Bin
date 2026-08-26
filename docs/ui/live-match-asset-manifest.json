@@ -1,0 +1,63 @@
+{
+  "pack": "SINBIN UI Skin Pack",
+  "version": "0.1.0",
+  "scope": "Selected Violetta bench-card proof component",
+  "logicalStage": {
+    "width": 844,
+    "height": 390
+  },
+  "assets": {
+    "texture-painted-navy": {
+      "file": "/assets/ui/live-match/textures/texture-painted-navy.webp",
+      "dimensions": [512, 512],
+      "repeat": "repeat",
+      "backgroundSizeLogicalPx": 256,
+      "opacity": 0.38,
+      "blendMode": "soft-light",
+      "role": "Material texture only; never carries state or information"
+    },
+    "texture-surface-wear": {
+      "file": "/assets/ui/live-match/textures/texture-surface-wear.webp",
+      "dimensions": [512, 512],
+      "repeat": "repeat",
+      "backgroundSizeLogicalPx": 256,
+      "opacity": 0.16,
+      "blendMode": "normal",
+      "role": "Optional restrained wear overlay"
+    },
+    "frame-bench-neutral": {
+      "file": "/assets/ui/live-match/frames/frame-bench-neutral-9slice.png",
+      "dimensions": [256, 256],
+      "slice": 48,
+      "logicalBorderWidth": 8,
+      "repeat": "stretch",
+      "center": "transparent",
+      "role": "Default bench-card construction"
+    },
+    "frame-bench-selected": {
+      "file": "/assets/ui/live-match/frames/frame-bench-selected-9slice.png",
+      "dimensions": [256, 256],
+      "slice": 48,
+      "logicalBorderWidth": 8,
+      "repeat": "stretch",
+      "center": "transparent",
+      "role": "Interaction selection only; never rarity or prestige"
+    },
+    "energy-pip": {
+      "file": "/assets/ui/live-match/icons/energy-pip.svg",
+      "viewBox": "0 0 32 12",
+      "defaultColor": "#70cbe4",
+      "activeUsage": "Inline the SVG and set color from the player/state token",
+      "inactiveUsage": "Reuse the same SVG at 18% opacity; do not create a separate bitmap"
+    },
+    "violetta-live-card": {
+      "file": "/assets/characters/violetta/violetta-live-card-placeholder-v1.png",
+      "role": "Existing approved transparent placeholder",
+      "crop": {
+        "anchor": "bottom-left",
+        "safeFaceZone": "Do not place labels or meters across the face",
+        "objectPosition": "50% 20%"
+      }
+    }
+  }
+}

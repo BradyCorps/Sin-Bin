@@ -11,8 +11,11 @@
     "build": "bash scripts/build-verified.sh",
     "start": "WRANGLER_LOG_PATH=.wrangler/wrangler.log vinext start",
     "test": "npm run build && node --test tests/*.test.mjs",
+    "test:visual": "playwright test",
     "validate:artifact": "bash scripts/validate-artifact.sh",
     "lint": "bash scripts/sites-env.sh -- eslint . --ignore-pattern dist --ignore-pattern .next",
+    "storybook": "SINBIN_STORYBOOK=1 storybook dev -p 6006",
+    "build-storybook": "SINBIN_STORYBOOK=1 storybook build",
     "db:generate": "bash scripts/sites-env.sh -- drizzle-kit generate"
   },
   "dependencies": {
@@ -23,6 +26,9 @@
   },
   "devDependencies": {
     "@cloudflare/vite-plugin": "1.37.1",
+    "@playwright/test": "^1.55.0",
+    "@storybook/addon-a11y": "^10.5.8",
+    "@storybook/react-vite": "^10.5.8",
     "@tailwindcss/postcss": "4.2.1",
     "@types/node": "22.19.19",
     "@types/react": "19.2.14",
@@ -33,6 +39,7 @@
     "eslint": "9.39.4",
     "eslint-config-next": "16.2.6",
     "react-server-dom-webpack": "19.2.6",
+    "storybook": "^10.5.8",
     "tailwindcss": "4.2.1",
     "typescript": "5.9.3",
     "vinext": "0.0.50",
@@ -40,5 +47,5 @@
     "wrangler": "4.92.0"
   },
   "type": "module",
-  "displayName": "SINBIN \u2014 Live Shift Lab"
+  "displayName": "SINBIN — Live Shift Lab"
 }

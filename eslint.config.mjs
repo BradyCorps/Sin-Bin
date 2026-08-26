@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Checksummed skin-pack previews are archived documentation, not app source.
+    "docs/ui/skin-packs/**",
   ]),
 ]);
 

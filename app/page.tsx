@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import Image from "next/image";
+import { StageScaler } from "@/components/live-match/StageScaler";
 import {
   CADENCES, PLAYERS, RECRUIT_OFFERS, RUN_RESOLUTIONS, SEQUENCES,
   advanceClock, createGame, diagnosis, diagnosisSummary, dumpAndChange, getDisruption,
@@ -128,7 +129,7 @@ export default function Home() {
       <button className="primary-action" onClick={() => setGame(startGame)}>START GAME 1 · {rosterCopy[conditions.roster].title} · {CADENCES[conditions.cadence] / 1000} SEC</button>
     </section></div>}
 
-    <div className="match-viewport"><section className={`match-stage ${comparisonFixture ? "comparison-fixture" : ""}`} aria-label="Live match">
+    <StageScaler className="match-viewport"><section className={`match-stage ${comparisonFixture ? "comparison-fixture" : ""}`} aria-label="Live match">
       <header className="match-rail">
         <div className="team-panel home"><span>SIN BIN</span><small>HOME · FIRST TO 3</small><strong>{game.goalsFor}</strong></div>
         <div className="resolution-panel"><span>RESOLUTION</span><strong>{String(comparisonFixture ? 4 : Math.min(game.resolution + 1, RUN_RESOLUTIONS)).padStart(2, "0")} <small>/ {RUN_RESOLUTIONS}</small></strong><i>{CADENCES[game.conditions.cadence as CadenceId] / 1000} SEC</i></div>
@@ -166,7 +167,7 @@ export default function Home() {
       </div>
 
       {paused && <div className="stage-obscure"><strong>PAUSED</strong><small>Tactical state obscured</small><button onClick={() => setPaused(false)}>RESUME</button></div>}
-    </section></div>
+    </section></StageScaler>
 
     {screen === "game" && game.phase === "ended" && <div className="result-backdrop"><section className={`result-card ${game.outcome?.result}`}><p className="eyebrow">GAME {gameNumber} DIAGNOSIS · {SEQUENCES[game.conditions.sequence as SequenceId].name}</p><h2>{game.outcome?.result === "win" ? "THE MACHINE WON" : game.outcome?.result === "tie" ? "THE MACHINE SURVIVED" : "THE PLAY CAME APART"}</h2><p className="result-subtitle">{game.outcome?.result === "tie" ? "The score finished level. Pressure and Threat remain diagnostic values, not a hidden tiebreaker." : game.outcome?.result === "win" ? "The machine finished ahead on goals." : "The opponent finished ahead on goals."}</p><div className="result-score"><strong>{game.goalsFor}</strong><span>—</span><strong>{game.goalsAgainst}</strong></div><div className="diagnosis-list">{diagnosis(game).map((line: string) => <p key={line}>{line}</p>)}</div><button className="primary-action" onClick={recordRun}>{gameNumber === 3 ? "COMPLETE THREE-GAME TEST" : "FACE THE RECRUITS"}</button><button className="text-action" onClick={replayGame}>Replay identical game</button></section></div>}
 

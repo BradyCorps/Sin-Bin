@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
+  <defs>
+    <linearGradient id="brass" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f0dfba"/>
+      <stop offset="0.22" stop-color="#9c7a49"/>
+      <stop offset="0.52" stop-color="#d1b27a"/>
+      <stop offset="0.78" stop-color="#725331"/>
+      <stop offset="1" stop-color="#e1c997"/>
+    </linearGradient>
+    <filter id="grain" x="-10%" y="-10%" width="120%" height="120%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.7" numOctaves="2" seed="1978" result="noise"/>
+      <feColorMatrix in="noise" type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 .16 0" result="grainAlpha"/>
+      <feComposite in="grainAlpha" in2="SourceAlpha" operator="in" result="grainMask"/>
+      <feBlend in="SourceGraphic" in2="grainMask" mode="multiply"/>
+    </filter>
+  </defs>
+
+  <path
+    d="M16 2H240L254 16V240L240 254H16L2 240V16ZM49 38L38 49V207L49 218H207L218 207V49L207 38Z"
+    fill="url(#brass)"
+    fill-rule="evenodd"
+    filter="url(#grain)"
+  />
+  <path d="M16 2H240L254 16V240L240 254H16L2 240V16Z" fill="none" stroke="#06141b" stroke-width="6"/>
+  <path d="M21 8H235L248 21V235L235 248H21L8 235V21Z" fill="none" stroke="#ead8ad" stroke-width="2"/>
+  <path d="M28 15H228L241 28V228L228 241H28L15 228V28Z" fill="none" stroke="#4b3826" stroke-width="6"/>
+  <path d="M34 23H222L233 34V222L222 233H34L23 222V34Z" fill="none" stroke="#b69661" stroke-width="2" opacity=".9"/>
+  <path d="M49 38L38 49V207L49 218H207L218 207V49L207 38Z" fill="none" stroke="#061820" stroke-width="10"/>
+  <path d="M49 42L42 49V207L49 214H207L214 207V49L207 42Z" fill="none" stroke="#d4bb87" stroke-width="2"/>
+</svg>

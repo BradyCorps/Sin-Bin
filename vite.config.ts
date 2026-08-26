@@ -34,6 +34,10 @@ const localBindingConfig = {
 };
 
 export default defineConfig(async () => {
+  // Storybook supplies its own React client build. Keep vinext/RSC and the
+  // Cloudflare worker environments exclusive to the application pipeline.
+  if (process.env.SINBIN_STORYBOOK === "1") return {};
+
   // Keep Wrangler and Miniflare state project-local. These are non-secret tool
   // settings; application environment belongs in ignored `.env*` files.
   process.env.WRANGLER_WRITE_LOGS ??= "false";

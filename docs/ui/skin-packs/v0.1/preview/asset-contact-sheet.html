@@ -1,0 +1,385 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>SINBIN UI Skin Pack v0.1</title>
+  <style>
+    :root {
+      --navy: #082632;
+      --navy-deep: #041820;
+      --cream: #eadfca;
+      --cream-dim: #bdb39e;
+      --yellow: #f0c437;
+      --cyan: #70cbe4;
+      --brass: #a78655;
+      --wood: #21150f;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      width: 1600px;
+      height: 1000px;
+      overflow: hidden;
+      background: var(--navy-deep);
+      color: var(--cream);
+      font-family: "Arial Narrow", "Roboto Condensed", Arial, sans-serif;
+    }
+
+    body {
+      padding: 42px 52px;
+      background:
+        repeating-linear-gradient(90deg, rgba(255,255,255,.018) 0 1px, transparent 1px 44px),
+        linear-gradient(145deg, #061b23 0%, #071e27 54%, #04151c 100%);
+    }
+
+    header {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      border-bottom: 2px solid rgba(199,166,101,.58);
+      padding: 0 4px 18px;
+      margin-bottom: 24px;
+    }
+
+    h1 {
+      margin: 0;
+      font-family: Impact, "Arial Narrow", sans-serif;
+      font-size: 45px;
+      font-weight: 500;
+      font-style: italic;
+      letter-spacing: 2px;
+    }
+
+    header p {
+      margin: 0 0 5px;
+      color: var(--cream-dim);
+      font-size: 17px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+
+    .asset-grid {
+      display: grid;
+      grid-template-columns: 272px 272px 488px 1fr;
+      gap: 18px;
+      height: 276px;
+      margin-bottom: 28px;
+    }
+
+    .sample {
+      position: relative;
+      overflow: hidden;
+      min-width: 0;
+      border: 1px solid rgba(219,193,143,.35);
+      background: #0b2631;
+    }
+
+    .sample-label {
+      position: absolute;
+      z-index: 4;
+      left: 14px;
+      bottom: 12px;
+      padding: 6px 9px;
+      background: rgba(3,17,23,.88);
+      color: var(--cream);
+      font-size: 13px;
+      font-weight: 800;
+      letter-spacing: 1.4px;
+      text-transform: uppercase;
+    }
+
+    .navy-texture {
+      background-image: url('../public/assets/ui/live-match/textures/texture-painted-navy.webp');
+      background-size: 256px 256px;
+    }
+
+    .wear-sample {
+      background:
+        url('../public/assets/ui/live-match/textures/texture-surface-wear.webp') repeat,
+        #e7dcc4;
+      background-size: 256px 256px, auto;
+    }
+
+    .frame-stack {
+      display: grid;
+      grid-template-rows: 1fr 1fr;
+      gap: 12px;
+      padding: 8px;
+      background: #04171f;
+    }
+
+    .frame-demo {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 0;
+      background:
+        linear-gradient(rgba(8,38,50,.8), rgba(8,38,50,.8)),
+        url('../public/assets/ui/live-match/textures/texture-painted-navy.webp');
+      background-size: auto, 210px;
+      color: var(--cream);
+      font-size: 18px;
+      font-weight: 900;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+
+    .frame-demo::after,
+    .card-frame {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border: 14px solid transparent;
+      border-image-slice: 48;
+      border-image-width: 14px;
+      border-image-repeat: stretch;
+      pointer-events: none;
+    }
+
+    .frame-demo.neutral::after {
+      border-image-source: url('../public/assets/ui/live-match/frames/frame-bench-neutral-9slice.png');
+    }
+
+    .frame-demo.selected::after {
+      border-image-source: url('../public/assets/ui/live-match/frames/frame-bench-selected-9slice.png');
+    }
+
+    .reference {
+      background: #061820;
+    }
+
+    .reference img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center;
+      opacity: .9;
+    }
+
+    .proof-label {
+      display: flex;
+      align-items: baseline;
+      gap: 16px;
+      margin: 0 3px 12px;
+    }
+
+    .proof-label h2 {
+      margin: 0;
+      font-family: Impact, "Arial Narrow", sans-serif;
+      font-size: 27px;
+      font-weight: 500;
+      font-style: italic;
+      letter-spacing: 1.7px;
+    }
+
+    .proof-label span {
+      color: var(--cream-dim);
+      font-size: 14px;
+      font-weight: 800;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+    }
+
+    .card {
+      position: relative;
+      height: 318px;
+      overflow: hidden;
+      clip-path: polygon(14px 0, calc(100% - 14px) 0, 100% 14px, 100% calc(100% - 14px), calc(100% - 14px) 100%, 14px 100%, 0 calc(100% - 14px), 0 14px);
+      background: var(--navy);
+      box-shadow: 0 18px 45px rgba(0,0,0,.35);
+    }
+
+    .card-surface,
+    .card-wear {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+    }
+
+    .card-surface {
+      z-index: 0;
+      background:
+        linear-gradient(110deg, rgba(58,99,108,.34), transparent 44%, rgba(0,0,0,.28)),
+        url('../public/assets/ui/live-match/textures/texture-painted-navy.webp');
+      background-size: auto, 256px 256px;
+      background-blend-mode: soft-light, normal;
+      opacity: .88;
+    }
+
+    .card-wear {
+      z-index: 3;
+      background: url('../public/assets/ui/live-match/textures/texture-surface-wear.webp') repeat;
+      background-size: 256px 256px;
+      opacity: .13;
+    }
+
+    .portrait-zone {
+      position: absolute;
+      z-index: 1;
+      left: 18px;
+      top: 12px;
+      bottom: 12px;
+      width: 430px;
+      overflow: hidden;
+      border-right: 2px solid rgba(229,214,179,.18);
+      background: radial-gradient(circle at 40% 38%, rgba(105,157,169,.32), transparent 62%);
+    }
+
+    .portrait-zone img {
+      position: absolute;
+      left: -12px;
+      bottom: -226px;
+      height: 520px;
+      width: 520px;
+      object-fit: contain;
+      object-position: center bottom;
+      filter: saturate(.94) contrast(1.02);
+    }
+
+    .card-copy {
+      position: absolute;
+      z-index: 4;
+      left: 486px;
+      right: 54px;
+      top: 58px;
+      bottom: 42px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      grid-template-rows: auto auto 1fr;
+      column-gap: 64px;
+    }
+
+    .selected-label {
+      grid-column: 1 / -1;
+      color: var(--yellow);
+      font-size: 18px;
+      font-weight: 950;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+
+    .player-name {
+      grid-column: 1 / -1;
+      margin-top: 7px;
+      font-family: Impact, "Arial Narrow", sans-serif;
+      font-size: 58px;
+      font-weight: 500;
+      letter-spacing: 3px;
+      line-height: .95;
+      text-transform: uppercase;
+      text-shadow: 0 3px 0 rgba(0,0,0,.42);
+    }
+
+    .role {
+      align-self: end;
+      color: #9fc8d2;
+      font-size: 22px;
+      font-weight: 900;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+
+    .energy {
+      align-self: end;
+    }
+
+    .energy-title {
+      margin-bottom: 12px;
+      color: var(--cream);
+      font-size: 21px;
+      font-weight: 950;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+    }
+
+    .pips {
+      display: flex;
+      gap: 5px;
+    }
+
+    .pips img {
+      width: 32px;
+      height: 12px;
+    }
+
+    .card-frame {
+      z-index: 8;
+      border-width: 18px;
+      border-image-source: url('../public/assets/ui/live-match/frames/frame-bench-selected-9slice.png');
+      border-image-width: 18px;
+    }
+
+    footer {
+      display: flex;
+      justify-content: space-between;
+      margin: 20px 4px 0;
+      color: #8fa0a0;
+      font-size: 13px;
+      font-weight: 800;
+      letter-spacing: 1.4px;
+      text-transform: uppercase;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>SINBIN UI SKIN PACK v0.1</h1>
+    <p>Selected Violetta bench-card proof</p>
+  </header>
+
+  <section class="asset-grid" aria-label="Asset specimens">
+    <article class="sample navy-texture"><span class="sample-label">Painted navy · seamless</span></article>
+    <article class="sample wear-sample"><span class="sample-label">Wear overlay · transparent</span></article>
+    <article class="frame-stack">
+      <div class="frame-demo neutral">Neutral frame</div>
+      <div class="frame-demo selected">Selected frame</div>
+    </article>
+    <article class="sample reference">
+      <img src="../docs/ui/live-match-reference-v1.jpg" alt="Approved live-match target reference" />
+      <span class="sample-label">Target reference</span>
+    </article>
+  </section>
+
+  <div class="proof-label">
+    <h2>ASSEMBLED PROOF COMPONENT</h2>
+    <span>Material strength and crop remain adjustable during Storybook integration</span>
+  </div>
+
+  <section class="card" aria-label="Selected Violetta bench card specimen">
+    <div class="card-surface"></div>
+    <div class="portrait-zone">
+      <img src="../public/assets/characters/violetta/violetta-live-card-placeholder-v1.png" alt="Violetta" />
+    </div>
+    <div class="card-copy">
+      <div class="selected-label">Selected</div>
+      <div class="player-name">Violetta</div>
+      <div class="role">Bridge · Flex</div>
+      <div class="energy">
+        <div class="energy-title">Energy 8 / 8</div>
+        <div class="pips" aria-label="Eight of eight Energy">
+          <img src="../public/assets/ui/live-match/icons/energy-pip.svg" alt="" />
+          <img src="../public/assets/ui/live-match/icons/energy-pip.svg" alt="" />
+          <img src="../public/assets/ui/live-match/icons/energy-pip.svg" alt="" />
+          <img src="../public/assets/ui/live-match/icons/energy-pip.svg" alt="" />
+          <img src="../public/assets/ui/live-match/icons/energy-pip.svg" alt="" />
+          <img src="../public/assets/ui/live-match/icons/energy-pip.svg" alt="" />
+          <img src="../public/assets/ui/live-match/icons/energy-pip.svg" alt="" />
+          <img src="../public/assets/ui/live-match/icons/energy-pip.svg" alt="" />
+        </div>
+      </div>
+    </div>
+    <div class="card-wear"></div>
+    <div class="card-frame"></div>
+  </section>
+
+  <footer>
+    <span>Selection yellow is interaction state—not rarity</span>
+    <span>Runtime text remains HTML · Character remains replaceable PNG</span>
+  </footer>
+</body>
+</html>
