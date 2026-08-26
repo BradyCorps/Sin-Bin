@@ -1,9 +1,9 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
-  CADENCES, PENALTY_RESOLUTIONS, PLAYERS, RECRUIT_OFFERS, SEQUENCES,
-  advanceClock, createGame, diagnosis, diagnosisSummary, dumpAndChange, getDisruption,
-  getSubstitutionPreview, initialLineup, moveBenchSkater, recruitIntoLineup, resolve, selectSlot,
+  CADENCES, CONSTRUCTION_POOL, PENALTY_RESOLUTIONS, PLAYERS, RECRUIT_OFFERS, SEQUENCES,
+  advanceClock, buildLineup, createGame, diagnosis, diagnosisSummary, dumpAndChange, getDisruption,
+  getSubstitutionPreview, initialLineup, moveBenchSkater, recruitIntoLineup, recruitOffersFor, resolve, selectSlot,
   startGame, substitute, takePenalty,
 } from "../app/game-engine.mjs";
 
@@ -283,5 +283,38 @@ test("recruit and release choices change outcomes under identical generic decisi
       }
     }
     assert.ok(results.size > 1, `${roster} recruit choices all resolved ${[...results].join()}`);
+  }
+});
+
+test("buildLineup accepts a valid six-skater construction and rejects invalid ones", () => {
+  for (const roster of Object.keys(PLAYERS)) {
+    const pool = CONSTRUCTION_POOL[roster];
+    assert.equal(pool.length, 9, `${roster} construction pool should offer nine face-up skaters`);
+    const built = buildLineup(roster, pool.slice(0, 6));
+    assert.deepEqual(built, { active: pool.slice(0, 3), bench: pool.slice(3, 6) });
+    assert.equal(buildLineup(roster, pool.slice(0, 5)), null, "five ids must be rejected");
+    assert.equal(buildLineup(roster, [...pool.slice(0, 5), pool[0]]), null, "a duplicate id must be rejected");
+    assert.equal(buildLineup(roster, [...pool.slice(0, 5), "not-a-real-id"]), null, "an id outside the pool must be rejected");
+  }
+});
+
+test("a constructed lineup plays a full deterministic game with no invalid state", () => {
+  const built = buildLineup("relay", CONSTRUCTION_POOL.relay.slice(0, 6));
+  let state = running({ roster: "relay", sequence: "vice", cadence: "control", lineup: built });
+  while (state.phase === "running") {
+    state = selectSlot(state, 0); state = substitute(state, 0); state = resolve(state);
+  }
+  assert.ok(["win", "tie", "loss"].includes(state.outcome.result));
+});
+
+test("recruitOffersFor excludes skaters already owned so no duplicate id can enter a lineup", () => {
+  for (const roster of Object.keys(PLAYERS)) {
+    const lineup = buildLineup(roster, CONSTRUCTION_POOL[roster].slice(0, 6));
+    const owned = new Set([...lineup.active, ...lineup.bench]);
+    for (let gameIndex = 0; gameIndex < RECRUIT_OFFERS.length; gameIndex += 1) {
+      const offers = recruitOffersFor(gameIndex, lineup);
+      assert.ok(offers.length >= 1, `${roster} game ${gameIndex + 1} must always leave at least one fresh recruit`);
+      assert.ok(offers.every((id) => !owned.has(id)), `${roster} game ${gameIndex + 1} must not re-offer an owned skater`);
+    }
   }
 });

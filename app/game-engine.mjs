@@ -61,6 +61,29 @@ const starts = {
 
 export function initialLineup(rosterId) { return structuredClone(starts[rosterId]); }
 
+// LSL-4: a small fixed face-up pool per identity (its 3 starting pairs plus
+// 3 of the 6 shared recruits made visible up front) so the player deliberately
+// picks six before Game 1 instead of always starting from the same default six.
+const constructionReserves = { relay: ["ada", "dove", "briar"], overload: ["cato", "fox", "echo"] };
+export const CONSTRUCTION_POOL = Object.fromEntries(Object.keys(starts).map((rosterId) => [rosterId, [...starts[rosterId].active, ...starts[rosterId].bench, ...constructionReserves[rosterId]]]));
+
+// orderedIds: exactly six unique ids from CONSTRUCTION_POOL[rosterId]. The first
+// three become the Recover/Create/Finish starters in that order; the remaining
+// three become the bench in that order. Returns null on any invalid selection.
+export function buildLineup(rosterId, orderedIds) {
+  const pool = CONSTRUCTION_POOL[rosterId];
+  if (!pool || !Array.isArray(orderedIds) || orderedIds.length !== 6) return null;
+  if (new Set(orderedIds).size !== 6 || !orderedIds.every((id) => pool.includes(id))) return null;
+  return { active: orderedIds.slice(0, 3), bench: orderedIds.slice(3) };
+}
+
+// A recruit already owned (drafted during construction, or recruited earlier)
+// must never be offered again -- that would duplicate an id across the lineup.
+export function recruitOffersFor(gameIndex, lineup) {
+  const owned = new Set([...lineup.active, ...lineup.bench]);
+  return (RECRUIT_OFFERS[gameIndex] ?? []).filter((id) => !owned.has(id));
+}
+
 export function recruitIntoLineup(lineup, outgoingId, incomingId) {
   if (!RECRUIT_OFFERS.flat().includes(incomingId)) return lineup;
   const next = structuredClone(lineup);

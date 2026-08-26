@@ -4,9 +4,9 @@ import { useEffect, useRef, useState, type CSSProperties } from "react";
 import Image from "next/image";
 import { StageScaler } from "@/components/live-match/StageScaler";
 import {
-  CADENCES, PLAYERS, RECRUIT_OFFERS, RUN_RESOLUTIONS, SEQUENCES,
-  advanceClock, createGame, diagnosis, diagnosisSummary, dumpAndChange, getDisruption,
-  getSubstitutionPreview, initialLineup, moveBenchSkater, recruitIntoLineup, selectSlot,
+  CADENCES, CONSTRUCTION_POOL, PLAYERS, RUN_RESOLUTIONS, SEQUENCES,
+  advanceClock, buildLineup, createGame, diagnosis, diagnosisSummary, dumpAndChange, getDisruption,
+  getSubstitutionPreview, initialLineup, moveBenchSkater, recruitIntoLineup, recruitOffersFor, selectSlot,
   startGame, substitute, takePenalty,
 } from "./game-engine.mjs";
 
@@ -33,6 +33,8 @@ export default function Home() {
   const [gameNumber, setGameNumber] = useState(1);
   const [lineup, setLineup] = useState<Lineup>(() => initialLineup("relay"));
   const [game, setGame] = useState(() => createGame({ ...conditions, sequence: campaignSequences[0], lineup }));
+  const [setupPhase, setSetupPhase] = useState<"identity" | "build" | "campaign">("identity");
+  const [draftOrder, setDraftOrder] = useState<string[]>([]);
   const [screen, setScreen] = useState<"game" | "recruit" | "complete">("game");
   const [chosenRecruit, setChosenRecruit] = useState<string | null>(null);
   const [releaseId, setReleaseId] = useState<string | null>(null);
@@ -68,6 +70,7 @@ export default function Home() {
       setPreviewResolution(0);
       setSelectedBench(0);
       setComparisonFixture(true);
+      setSetupPhase("campaign");
     }, 0);
     return () => window.clearTimeout(fixtureTimer);
   }, []);
@@ -81,13 +84,25 @@ export default function Home() {
   const intermissionDiagnosis = diagnosisSummary(game);
   const benchPreview = previewResolution === game.resolution && !game.windowDecision ? selectedBench : null;
   const penaltyPreview = previewResolution === game.resolution && !game.windowDecision && penaltyMode;
+  const recruitOffers = recruitOffersFor(gameNumber - 1, lineup);
 
   function resetCampaign(nextConditions = conditions) {
     const freshLineup = initialLineup(nextConditions.roster);
     setConditions(nextConditions); setGameNumber(1); setLineup(freshLineup); setScreen("game"); setChosenRecruit(null); setReleaseId(null); setRecruitConfirmed(false); setRunHistory([]);
     setGame(createGame({ ...nextConditions, sequence: campaignSequences[0], lineup: freshLineup }));
+    setSetupPhase("identity"); setDraftOrder([]);
   }
   function changeCondition(key: "roster" | "cadence", value: string) { resetCampaign({ ...conditions, [key]: value } as typeof conditions); }
+  function toggleDraftPick(id: string) {
+    setDraftOrder((current) => current.includes(id) ? current.filter((pick) => pick !== id) : current.length < 6 ? [...current, id] : current);
+  }
+  function beginConstructedRun() {
+    const built = buildLineup(conditions.roster, draftOrder);
+    if (!built) return;
+    setLineup(built);
+    setGame(startGame(createGame({ ...conditions, sequence: campaignSequences[0], lineup: built })));
+    setSetupPhase("campaign");
+  }
   function recordRun() {
     setRunHistory((history) => [...history, { game: gameNumber, result: game.outcome?.result ?? "loss", diagnosis: diagnosis(game) }]);
     if (gameNumber === 3) setScreen("complete"); else setScreen("recruit");
@@ -121,12 +136,28 @@ export default function Home() {
   return <main className={`site-shell ${screen === "game" ? "match-mode" : ""}`}>
     <header className="masthead"><div><p className="eyebrow">SINBIN // MECHANIC TEST 03B</p><h1>THREE-GAME SHIFT</h1></div><div className="lab-thesis"><span>STABILIZATION</span><strong>Recruitment passed. Can the live loop resist generic play?</strong></div></header>
 
-    {game.phase === "ready" && !comparisonFixture && <div className="match-setup-backdrop"><section className="condition-panel match-setup" role="dialog" aria-modal="true" aria-labelledby="match-setup-title">
-      <header><span>SINBIN · LIVE SHIFT</span><h2 id="match-setup-title">LOCK IN THE MACHINE</h2><p>Choose the line identity and decision cadence before the clock starts.</p></header>
+    {setupPhase === "identity" && !comparisonFixture && <div className="match-setup-backdrop"><section className="condition-panel match-setup" role="dialog" aria-modal="true" aria-labelledby="match-setup-title">
+      <header><span>SINBIN · LIVE SHIFT</span><h2 id="match-setup-title">CHOOSE YOUR MACHINE</h2><p>Choose the line identity and decision cadence, then build your six.</p></header>
       <div><span className="label">STARTING MACHINE</span><div className="choice-grid two">{Object.entries(rosterCopy).map(([id, copy]) => <button key={id} className={conditions.roster === id ? "chosen" : ""} onClick={() => changeCondition("roster", id)}><strong>{copy.title}</strong><small>{copy.summary}</small><i>{conditions.roster === id ? "SELECTED" : "SELECT"}</i></button>)}</div></div>
       <div><span className="label">RESOLUTION CADENCE</span><div className="choice-grid two">{Object.entries(CADENCES).map(([id, ms]) => <button key={id} className={conditions.cadence === id ? "chosen" : ""} onClick={() => changeCondition("cadence", id)}><strong>{ms / 1000} SECONDS</strong><small>{id === "control" ? "Fast control condition" : "Slower planning condition"}</small><i>{conditions.cadence === id ? "SELECTED" : "SELECT"}</i></button>)}</div></div>
-      <p className="campaign-rule">THE VICE → THE CHASE → STATIC ICE · FIRST TO 3 · 12 RESOLUTIONS</p>
-      <button className="primary-action" onClick={() => setGame(startGame)}>START GAME 1 · {rosterCopy[conditions.roster].title} · {CADENCES[conditions.cadence] / 1000} SEC</button>
+      <p className="campaign-rule">THE VICE → THE CHASE → STATIC ICE (FINAL) · FIRST TO 3 · 12 RESOLUTIONS</p>
+      <button className="primary-action" onClick={() => setSetupPhase("build")}>NEXT · BUILD YOUR SIX →</button>
+    </section></div>}
+
+    {setupPhase === "build" && !comparisonFixture && <div className="match-setup-backdrop"><section className="condition-panel match-setup build-setup" role="dialog" aria-modal="true" aria-labelledby="build-setup-title">
+      <header><span>SINBIN · {rosterCopy[conditions.roster].title}</span><h2 id="build-setup-title">BUILD YOUR SIX</h2><p>Tap in order: your Recover, then Create, then Finish, then three for the bench. Tap a pick again to remove it.</p></header>
+      <div className="build-pool">{CONSTRUCTION_POOL[conditions.roster].map((id: string) => {
+        const p = players[id]; const pickIndex = draftOrder.indexOf(id); const picked = pickIndex >= 0;
+        const slotLabel = pickIndex === 0 ? "1 · RECOVER" : pickIndex === 1 ? "2 · CREATE" : pickIndex === 2 ? "3 · FINISH" : pickIndex >= 0 ? `${pickIndex + 1} · BENCH` : null;
+        return <button key={id} type="button" className={`build-card${picked ? " chosen" : ""}`} disabled={!picked && draftOrder.length >= 6} onClick={() => toggleDraftPick(id)} style={{ "--accent": p.color } as CSSProperties}>
+          {slotLabel && <em>{slotLabel}</em>}
+          <strong>{p.name}</strong><small>{p.role} · {p.tags.join(" / ")}</small>
+          <span className="fit-line">R{p.fit[0]} · C{p.fit[1]} · F{p.fit[2]} · ENERGY {p.energy}</span>
+        </button>;
+      })}</div>
+      <p className="campaign-rule">{draftOrder.length} / 6 SELECTED</p>
+      <button className="primary-action" disabled={draftOrder.length !== 6} onClick={beginConstructedRun}>BEGIN THE RUN · GAME 1 · {SEQUENCES[campaignSequences[0]].name}</button>
+      <button className="text-action" onClick={() => { setDraftOrder([]); setSetupPhase("identity"); }}>← Change identity</button>
     </section></div>}
 
     <StageScaler className="match-viewport"><section className={`match-stage ${comparisonFixture ? "comparison-fixture" : ""}`} aria-label="Live match">
@@ -171,7 +202,7 @@ export default function Home() {
 
     {screen === "game" && game.phase === "ended" && <div className="result-backdrop"><section className={`result-card ${game.outcome?.result}`}><p className="eyebrow">GAME {gameNumber} DIAGNOSIS · {SEQUENCES[game.conditions.sequence as SequenceId].name}</p><h2>{game.outcome?.result === "win" ? "THE MACHINE WON" : game.outcome?.result === "tie" ? "THE MACHINE SURVIVED" : "THE PLAY CAME APART"}</h2><p className="result-subtitle">{game.outcome?.result === "tie" ? "The score finished level. Pressure and Threat remain diagnostic values, not a hidden tiebreaker." : game.outcome?.result === "win" ? "The machine finished ahead on goals." : "The opponent finished ahead on goals."}</p><div className="result-score"><strong>{game.goalsFor}</strong><span>—</span><strong>{game.goalsAgainst}</strong></div><div className="diagnosis-list">{diagnosis(game).map((line: string) => <p key={line}>{line}</p>)}</div><button className="primary-action" onClick={recordRun}>{gameNumber === 3 ? "COMPLETE THREE-GAME TEST" : "FACE THE RECRUITS"}</button><button className="text-action" onClick={replayGame}>Replay identical game</button></section></div>}
 
-    {screen === "recruit" && <div className="result-backdrop"><section className="result-card recruit-screen"><p className="eyebrow">BETWEEN GAMES · DIAGNOSE → RECRUIT → RELEASE → ORDER</p><h2>WHAT WAS MISSING?</h2><div className="intermission-diagnosis"><span>PREVIOUS GAME DIAGNOSIS</span><p>{intermissionDiagnosis.failures}</p><p>{intermissionDiagnosis.lastBrokenLink}</p>{intermissionDiagnosis.recruitDeployment && <p>{intermissionDiagnosis.recruitDeployment}</p>}</div><p className="result-subtitle">Choose a mechanical future. There is no aggregate rating: compare fit, Energy capacity, and effects.</p><div className="recruit-grid">{RECRUIT_OFFERS[gameNumber - 1].map((id) => <SkaterCard key={id} player={players[id]} selected={chosenRecruit === id} onClick={recruitConfirmed ? undefined : () => setChosenRecruit(id)} label={id === RECRUIT_OFFERS[gameNumber - 1][0] ? "POSSESSION BRIDGE" : id === RECRUIT_OFFERS[gameNumber - 1][1] ? "STABILIZER" : "VOLATILE SPECIALIST"} />)}</div><span className="label intermission-label">RELEASE ONE CURRENT SKATER</span><div className="release-grid">{[...lineup.active, ...lineup.bench].map((id) => <button disabled={recruitConfirmed} className={releaseId === id ? "chosen" : ""} key={id} onClick={() => setReleaseId(id)}><strong>{players[id].name}</strong><small>{players[id].role} · ENERGY {players[id].energy}</small><small>R{players[id].fit[0]} · C{players[id].fit[1]} · F{players[id].fit[2]}</small><small>{players[id].tags.join(" / ")}</small></button>)}</div>{chosenRecruit && releaseId && !recruitConfirmed && <div className="tradeoff"><div><span>GAIN</span><strong>{players[chosenRecruit].name} · {players[chosenRecruit].role}</strong><small>Energy {players[chosenRecruit].energy} · {players[chosenRecruit].tags.join(" / ")}</small></div><b>↔</b><div><span>LOSE</span><strong>{players[releaseId].name} · {players[releaseId].role}</strong><small>Energy {players[releaseId].energy} · {players[releaseId].tags.join(" / ")}</small></div></div>}{!recruitConfirmed ? <button className="primary-action" disabled={!chosenRecruit || !releaseId} onClick={confirmRecruit}>CONFIRM TRADEOFF</button> : <><span className="label intermission-label">SET BENCH ORDER · EARLIER CARDS ARE EASIER TO FIND LIVE</span><div className="bench-order">{lineup.bench.map((id, index) => <div key={id}><b>{index + 1}</b><span><strong>{players[id].name}</strong><small>{players[id].role} · Energy {players[id].energy} · {players[id].tags.join(" / ")}</small></span><button disabled={index === 0} onClick={() => setLineup((current) => moveBenchSkater(current, index, -1))}>↑</button><button disabled={index === lineup.bench.length - 1} onClick={() => setLineup((current) => moveBenchSkater(current, index, 1))}>↓</button></div>)}</div><button className="primary-action" onClick={beginNextGame}>START GAME {gameNumber + 1} · {SEQUENCES[campaignSequences[gameNumber]].name}</button></>}</section></div>}
+    {screen === "recruit" && <div className="result-backdrop"><section className="result-card recruit-screen"><p className="eyebrow">BETWEEN GAMES · DIAGNOSE → RECRUIT → RELEASE → ORDER</p><h2>WHAT WAS MISSING?</h2><div className="intermission-diagnosis"><span>PREVIOUS GAME DIAGNOSIS</span><p>{intermissionDiagnosis.failures}</p><p>{intermissionDiagnosis.lastBrokenLink}</p>{intermissionDiagnosis.recruitDeployment && <p>{intermissionDiagnosis.recruitDeployment}</p>}</div><p className="result-subtitle">Choose a mechanical future. There is no aggregate rating: compare fit, Energy capacity, and effects.</p><div className="recruit-grid">{recruitOffers.map((id, index) => <SkaterCard key={id} player={players[id]} selected={chosenRecruit === id} onClick={recruitConfirmed ? undefined : () => setChosenRecruit(id)} label={["POSSESSION BRIDGE", "STABILIZER", "VOLATILE SPECIALIST"][index] ?? "FACE-UP RECRUIT"} />)}</div><span className="label intermission-label">RELEASE ONE CURRENT SKATER</span><div className="release-grid">{[...lineup.active, ...lineup.bench].map((id) => <button disabled={recruitConfirmed} className={releaseId === id ? "chosen" : ""} key={id} onClick={() => setReleaseId(id)}><strong>{players[id].name}</strong><small>{players[id].role} · ENERGY {players[id].energy}</small><small>R{players[id].fit[0]} · C{players[id].fit[1]} · F{players[id].fit[2]}</small><small>{players[id].tags.join(" / ")}</small></button>)}</div>{chosenRecruit && releaseId && !recruitConfirmed && <div className="tradeoff"><div><span>GAIN</span><strong>{players[chosenRecruit].name} · {players[chosenRecruit].role}</strong><small>Energy {players[chosenRecruit].energy} · {players[chosenRecruit].tags.join(" / ")}</small></div><b>↔</b><div><span>LOSE</span><strong>{players[releaseId].name} · {players[releaseId].role}</strong><small>Energy {players[releaseId].energy} · {players[releaseId].tags.join(" / ")}</small></div></div>}{!recruitConfirmed ? <button className="primary-action" disabled={!chosenRecruit || !releaseId} onClick={confirmRecruit}>CONFIRM TRADEOFF</button> : <><span className="label intermission-label">SET BENCH ORDER · EARLIER CARDS ARE EASIER TO FIND LIVE</span><div className="bench-order">{lineup.bench.map((id, index) => <div key={id}><b>{index + 1}</b><span><strong>{players[id].name}</strong><small>{players[id].role} · Energy {players[id].energy} · {players[id].tags.join(" / ")}</small></span><button disabled={index === 0} onClick={() => setLineup((current) => moveBenchSkater(current, index, -1))}>↑</button><button disabled={index === lineup.bench.length - 1} onClick={() => setLineup((current) => moveBenchSkater(current, index, 1))}>↓</button></div>)}</div><button className="primary-action" onClick={beginNextGame}>START GAME {gameNumber + 1} · {SEQUENCES[campaignSequences[gameNumber]].name}</button></>}</section></div>}
 
     {screen === "complete" && <div className="result-backdrop"><section className="result-card"><p className="eyebrow">LSL-3B · THREE-GAME DIAGNOSIS</p><h2>RUN COMPLETE</h2><div className="campaign-summary">{runHistory.map((run) => <div key={run.game}><strong>GAME {run.game} · {run.result.toUpperCase()}</strong><p>{run.diagnosis[1]}</p>{run.diagnosis.find((line) => line.startsWith("Recruited ")) && <p>{run.diagnosis.find((line) => line.startsWith("Recruited "))}</p>}<p>{run.diagnosis.at(-1)}</p><small>{run.recruit && run.released ? `Next move: recruited ${players[run.recruit].name}, released ${players[run.released].name}.` : "Final game."}</small></div>)}</div><button className="primary-action" onClick={() => resetCampaign()}>RUN A NEW THREE-GAME TEST</button></section></div>}
     <footer><span>SINBIN // LIVE SHIFT LAB 3B</span><span>STABILIZE THE MACHINE. ADD NOTHING ELSE.</span></footer>

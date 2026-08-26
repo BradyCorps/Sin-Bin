@@ -379,7 +379,7 @@ Final game.
 | LSL-2A | `experiment/live-shift-lab-2a` | Does the hook support different machines, planning, and repeatable depth? | Completed internally | Proceed to narrow recruitment test |
 | LSL-3 | `experiment/live-shift-lab-3` | Does a diagnosed failure create a natural motive to recruit a missing component? | Completed internally | Hypothesis passed; stabilization required before baseline |
 | LSL-3B | `experiment/live-shift-lab-3b` | Can the recruitment loop resist invalid state and generic winning policies without new systems? | Completed internally | Passed; selected baseline for LSL-4 |
-| LSL-4 | `experiment/live-shift-lab-4` | Can deliberate six-skater construction create different viable live machines? | Defined; ready to implement | Pending |
+| LSL-4 | `experiment/live-shift-lab-4` | Can deliberate six-skater construction create different viable live machines? | Implemented; awaiting human validation | Needs human evidence |
 
 ---
 
@@ -680,7 +680,7 @@ This evidence remains creator-only. Broader-player validation, intentional-penal
 ## LSL-4 — Construct the machine
 
 **Branch:** `experiment/live-shift-lab-4`
-**Status:** Defined; ready to implement
+**Status:** Implemented; awaiting human validation
 
 ### Primary question
 
@@ -734,6 +734,35 @@ This evidence remains creator-only. Broader-player validation, intentional-penal
 ### Decision gate
 
 Do not expand into collection or progression unless two distinct constructed machines are independently enjoyable, their live operation differs materially, and pre-run choices create understandable consequences without overwhelming the live-rewire core.
+
+### Implementation
+
+**Date:** 2026-08-26
+
+The creator asked for a Currency Wars-inspired build-a-roster feel (assemble a squad, run it through escalating stages) without becoming an auto-chess battler, explicitly deferring to this design doc as the path. This is a direct implementation of the LSL-4 spec above, kept to the smallest change that tests it.
+
+**Construction pool, kept inside identity boundaries.** `roster` (Relay/Overload) is not just flavour -- it selects both which named skaters exist and which resolution-time bonus rules apply (Relay's bridge-chain bonus, Overload's charge-detonation bonus). Rather than merge the two rosters into one pool (which would require rebalancing untested cross-identity interactions), the face-up pool is each identity's own six starters plus three of the six shared recruits made visible up front (`CONSTRUCTION_POOL`, nine per identity). This satisfies "a small fixed face-up pool" using entirely existing, already-balanced content, with zero changes to `resolve()`, `substitute()`, or any other resolution logic.
+
+**Interaction, kept fully tap-based.** The player taps exactly six of the nine pool cards, in order: the 1st/2nd/3rd taps become the Recover/Create/Finish starters, the 4th-6th become the bench in that order; tapping a picked card again removes it. This is the minimum interaction that satisfies "assign three starters to roles, order three bench" -- one tap sequence, no drag, no second assignment phase -- and each card shows its live slot label as it's picked (e.g. "2 - CREATE"), so the consequence is visible immediately, consistent with the design doc's "felt consequence" pillar.
+
+**New engine surface (`app/game-engine.mjs`), all pure and additive:**
+- `CONSTRUCTION_POOL` -- the nine-skater face-up pool per identity.
+- `buildLineup(rosterId, orderedIds)` -- validates exactly six unique in-pool ids and produces the same `{active, bench}` shape `createGame` already consumed, so no other engine function needed to change.
+- `recruitOffersFor(gameIndex, lineup)` -- a correctness fix made necessary by construction: since a player can now draft a skater who used to only be available as a *between-games* recruit, the fixed `RECRUIT_OFFERS` lists must exclude anything already owned, or a duplicate id could enter the lineup array. Verified combinatorially and by test that both recruit rounds always leave at least one fresh offer regardless of what was drafted.
+
+**Kept out, per this same document's own exclusions:** no currency, shop, rarity, or economy; pool size stays at six-from-nine, not ten; no new campaign length. The "final boss" feel comes free from the existing three-sequence campaign (Game 3 relabelled "(FINAL)" in the setup copy) rather than a new mechanic.
+
+**Two real UI bugs found and fixed during verification** (both pre-existing, not introduced by construction, but both made the game unfinishable on the target mobile-landscape profile):
+1. `.match-setup-backdrop` and `.result-backdrop` centered their modal content with `display:grid;place-items:center`. On a landscape phone (667x375-844x390) the recruit screen's content is taller than the viewport, and centering an overflowing child inside a scrollable grid/flex container is a known trap: the overflow becomes unreachable by scrolling. Fixed by switching both to a normal block scroll container with `margin:auto` centering on the child, which collapses to top-aligned-and-fully-scrollable exactly when content overflows.
+2. The decorative "up-down arrow" between the GAIN/LOSE panels on the recruit screen visually overflowed its grid cell and intercepted clicks meant for the CONFIRM TRADEOFF button beneath it. Fixed with `pointer-events:none` on the purely decorative glyph.
+
+**Validation:** `npm run lint` and `npm test` (production build + 26 engine/rendered-html tests, three new for `buildLineup`/`recruitOffersFor`) pass. Beyond that, per this repository's own standard ("never accept a UI change based only on build/test success"), the full three-game campaign (identity -> build six -> Game 1 -> recruit -> Game 2 -> recruit -> Game 3/final -> complete) was played end-to-end with a real headless browser at all three of the UI spec's required viewports (667x375, 844x390, and a 1440x900 desktop check) with zero real console/page errors at any of them. (Note: an initial attempt used a *portrait* phone size and hit the app's own, correctly-behaving "ROTATE DEVICE TO PLAY" gate -- not a bug; this design's mobile target is landscape, per Section 1 of the live-match UI spec.)
+
+**Interpretation:** The construction step is implemented faithfully to the spec and the full loop is mechanically playable end-to-end on the target device profile. This is not yet a passed experiment -- LSL-4's pass/redesign signals (does construction produce felt, different substitution rhythms; is a lower-Energy specialist ever deliberately included; does one construction dominate) require human hands-on play, not automated verification.
+
+**Decision:** Needs human evidence against the pass/redesign signals above.
+
+**Next test:** Play at least two deliberately different six-skater constructions within the same identity through a full three-game campaign each. Record whether the construction choice is felt during live substitutions, and whether any construction is obviously dominant.
 
 ---
 
