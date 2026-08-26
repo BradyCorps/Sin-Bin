@@ -762,6 +762,35 @@ Do not expand into collection or progression unless two distinct constructed mac
 
 **Next test:** Play the Relay and Overload starting machines at both cadences. Record whether incoming-first previews reduce scanning time, whether the compact causal call remains legible during countdown pressure, and whether any panel styling distracts from the live chain.
 
+### UI-P0 correction pass — region containment
+
+**Date:** 2026-08-26
+**Branch:** `experiment/live-shift-lab-4`
+
+Human playtesting (a screenshot at match start, disruption HIGH FORECHECK) exposed the exact failure the correction brief had already named but that was never fixed in the shipped app: the disruption panel's stacked label/name/hint text was not height-constrained inside its 44 px region, and a browser measurement confirmed it rendered at 63.5 px, overlapping 19.5 px into the top of the Active Line region. The Active Line's causal-call chip appeared to collide with the bench boundary in the same screenshot.
+
+Root cause: `app/globals.css` (`.match-stage` and its `.stage-*` regions) is a separate, hand-maintained implementation of the live-match screen from `components/live-match/canonical-fixture.css` (the geometry-precise fixture used only in Storybook). The earlier correction work that produced `canonical-fixture.css` was never ported into the app the player actually runs, so the region-overflow failure mode persisted in production while a corrected reference sat unused in Storybook.
+
+**Fix:** Added `overflow: hidden` plus `min-width: 0` / `min-height: 0` to every primary region and its grid-item children in `app/globals.css` (top rail, meter/disruption row, active line, bench, action deck, and their cells), so no combination of live engine text (disruption names/hints vary in length per event, e.g. `BOARD PIN`'s 61-character hint vs the mockup's short placeholder) can ever grow a region past its assigned box. No engine or gameplay code changed.
+
+**Validation:** Installed dependencies, ran the real dev server, and used Playwright/Chromium (not build success alone) to load `?fixture=violetta-preview` — the correction brief's canonical comparison fixture — at all three required viewports.
+
+- Before: disruption region measured 63.5 px tall at 844×390 (spec: 44 px), bottom edge at y=141.5 against an Active Line top of y=128.
+- After: disruption region measures exactly 44 px at 844×390, and scales proportionally (34.8 px at 667×375, 46.5 px at 915×412) with no region intersections and no document scroll at any of the three viewports.
+- `npm test` (production build + 23 engine/rendered-html tests) and `npm run lint` pass unchanged.
+- Screenshots captured for all three viewports; causal chip correctly reads the fixture's short string (`VIOLETTA IN · CHOOSE DESTINATION`), not the long idle-state feed sentence, and sits at the active-line/bench seam without overlapping either.
+
+**Remaining known deviations from the north-star PNG** (appearance only — correction brief Section 6/7, intentionally not attempted in this pass):
+- No character portraits in the active/bench cards beyond the existing Violetta placeholder; other skaters still render as silhouette/arch stand-ins, per the spec's explicit instruction to validate geometry with neutral stand-ins first.
+- CRT shows placeholder grey pills, not the wireframe's simplified rink/skater line art.
+- Chain meter shows the numeric multiplier only, not the three-link Recover→Create→Finish diagram from spec 6.3.
+- Typography is system Arial/Helvetica, not the specified condensed late-1970s athletic display face.
+- Enamel/printed-paper/brass/wood materials are flatter than the north-star PNG's texture and surface wear.
+
+**Decision:** Structural geometry pass complete and validated; region-overflow failure resolved with reproducible before/after measurements. Appearance/material parity remains open and is a separate, larger pass.
+
+**Next test:** Decide whether to proceed with the material/typography/CRT-art pass next, or hands-on playtest the corrected geometry first before spending on appearance.
+
 ---
 
 ## Result-entry template

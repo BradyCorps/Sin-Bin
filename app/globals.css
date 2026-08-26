@@ -66,15 +66,15 @@
 }
 
 .match-stage button { min-width: 0; }
-.match-rail { display: grid; grid-template-columns: 112px 140px 112px 1fr 50px; gap: 6px; min-width: 0; }
-.team-panel, .resolution-panel, .crt-panel, .stage-pause, .stage-status > div, .stage-skater, .stage-bench, .stage-actions button { border: 1px solid #70818a; background: #122d3d; box-shadow: inset 0 0 0 2px #071821; }
+.match-rail { display: grid; grid-template-columns: 112px 140px 112px 1fr 50px; grid-auto-rows: 100%; gap: 6px; min-width: 0; min-height: 0; overflow: hidden; }
+.team-panel, .resolution-panel, .crt-panel, .stage-pause, .stage-status > div, .stage-skater, .stage-bench, .stage-actions button { min-width: 0; min-height: 0; overflow: hidden; border: 1px solid #70818a; background: #122d3d; box-shadow: inset 0 0 0 2px #071821; }
 .team-panel { position: relative; display: grid; align-content: center; padding: 7px 9px; overflow: hidden; }
 .team-panel span { font-size: 13px; font-weight: 950; font-style: italic; letter-spacing: .04em; white-space: nowrap; }
 .team-panel small { font-size: 7px; font-weight: 800; letter-spacing: .1em; }
 .team-panel strong { position: absolute; right: 8px; bottom: 3px; font-size: 30px; line-height: 1; }
 .team-panel.home { background: #8c2b1c; }
 .team-panel.visitor { background: #123d5a; }
-.resolution-panel { position: relative; display: grid; padding: 7px 10px; background: var(--cream); color: #111b20; }
+.resolution-panel { position: relative; display: grid; overflow: hidden; padding: 7px 10px; background: var(--cream); color: #111b20; }
 .resolution-panel > span { font-size: 8px; font-weight: 900; letter-spacing: .13em; }
 .resolution-panel > strong { font-size: 24px; line-height: 1; }
 .resolution-panel > strong small { font-size: 11px; }
@@ -86,8 +86,8 @@
 .crt-panel small { z-index: 1; overflow: hidden; color: #dce6de; font-size: 6px; font-weight: 800; text-overflow: ellipsis; white-space: nowrap; }
 .stage-pause { display: grid; place-content: center; gap: 3px; font-size: 22px; cursor: pointer; }
 .stage-pause span { font-size: 7px; font-weight: 900; }
-.stage-status { display: grid; grid-template-columns: 23% 13% 23% 1fr; gap: 6px; min-width: 0; }
-.stage-status > div { position: relative; min-width: 0; padding: 6px 9px; background: var(--cream); color: #11202a; }
+.stage-status { display: grid; grid-template-columns: 23% 13% 23% 1fr; grid-auto-rows: 100%; gap: 6px; min-width: 0; min-height: 0; overflow: hidden; }
+.stage-status > div { position: relative; min-width: 0; min-height: 0; overflow: hidden; padding: 6px 9px; background: var(--cream); color: #11202a; }
 .stage-meter span, .stage-chain span, .stage-disruption span { font-size: 8px; font-weight: 950; letter-spacing: .11em; }
 .stage-meter > strong, .stage-chain > strong { float: right; font-size: 15px; }
 .stage-meter > div { position: absolute; right: 9px; bottom: 7px; left: 9px; height: 8px; border: 2px solid #0a1a22; background: #08151b; }
@@ -99,7 +99,7 @@
 .stage-disruption > strong { font-size: 11px; }
 .stage-disruption > small { font-size: 7px; font-weight: 700; }
 .stage-disruption > b { position: absolute; top: 8px; right: 9px; color: #982f20; font-size: 22px; }
-.stage-active { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; min-width: 0; }
+.stage-active { display: grid; grid-template-columns: repeat(3, 1fr); grid-auto-rows: 100%; gap: 6px; min-width: 0; min-height: 0; overflow: hidden; }
 .stage-skater { position: relative; display: grid; grid-template-rows: 18px 1fr 38px; min-width: 0; overflow: hidden; padding: 0; border-width: 2px; color: var(--cream); cursor: pointer; text-align: left; }
 .stage-skater:disabled { cursor: default; opacity: 1; }
 .stage-skater > span { display: flex; justify-content: space-between; padding: 4px 8px; background: var(--accent); color: #071821; font-size: 8px; font-weight: 950; letter-spacing: .12em; }
@@ -121,11 +121,11 @@
 .stage-skater.shorthanded > span { background: transparent; color: var(--cream); }
 .stage-skater.shorthanded small { font-size: 7px; }
 .causal-chip { position: absolute; z-index: 3; top: 258px; left: 50%; width: 192px; height: 18px; padding: 4px 8px; transform: translateX(-50%); overflow: hidden; border: 1px solid var(--signal); background: var(--cream); color: #0c2638; font-size: 7px; font-weight: 950; letter-spacing: .05em; text-align: center; text-overflow: ellipsis; white-space: nowrap; }
-.stage-lower { display: grid; grid-template-columns: 62% 1fr; gap: 6px; min-width: 0; }
-.stage-bench { position: relative; padding: 18px 4px 4px; overflow: hidden; background: #091e2a; }
+.stage-lower { display: grid; grid-template-columns: 62% 1fr; grid-auto-rows: 100%; gap: 6px; min-width: 0; min-height: 0; overflow: hidden; }
+.stage-bench { position: relative; min-height: 0; padding: 18px 4px 4px; overflow: hidden; background: #091e2a; }
 .stage-bench h2 { position: absolute; top: 3px; left: 8px; margin: 0; color: #a9b5b7; font-size: 8px; letter-spacing: .15em; }
-.stage-bench > div { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; height: 100%; }
-.stage-bench button { display: grid; grid-template-columns: 48px 1fr; gap: 5px; min-width: 0; padding: 3px; border: 1px solid #62727a; background: #162d37; color: var(--cream); cursor: pointer; text-align: left; }
+.stage-bench > div { display: grid; grid-template-columns: repeat(3, 1fr); grid-auto-rows: 100%; gap: 4px; height: 100%; min-height: 0; overflow: hidden; }
+.stage-bench button { display: grid; grid-template-columns: 48px 1fr; gap: 5px; min-width: 0; min-height: 0; overflow: hidden; padding: 3px; border: 1px solid #62727a; background: #162d37; color: var(--cream); cursor: pointer; text-align: left; }
 .stage-bench button.selected { border: 2px solid var(--signal); transform: translateY(-2px); }
 .stage-bench button > i { display: grid; place-items: center; background: color-mix(in srgb, var(--accent) 50%, #172b39); font-size: 25px; font-style: normal; font-weight: 950; }
 .stage-bench button > span { display: grid; align-content: center; min-width: 0; }
@@ -133,8 +133,8 @@
 .stage-bench button small { color: var(--signal); font-weight: 900; }
 .stage-bench button strong { font-size: 11px; }
 .stage-bench button b, .stage-bench button em { color: #b9c5c4; }
-.stage-actions { display: grid; grid-template-columns: 1.6fr 1fr; gap: 6px; }
-.stage-actions button { padding: 8px; background: #123d5a; color: var(--cream); cursor: pointer; text-align: left; }
+.stage-actions { display: grid; grid-template-columns: 1.6fr 1fr; grid-auto-rows: 100%; gap: 6px; min-height: 0; overflow: hidden; }
+.stage-actions button { min-height: 0; overflow: hidden; padding: 8px; background: #123d5a; color: var(--cream); cursor: pointer; text-align: left; }
 .stage-actions button:last-child { background: #8c2b1c; }
 .stage-actions button.selected { outline: 3px solid var(--signal); outline-offset: -4px; }
 .stage-actions strong { display: block; font-size: 13px; font-style: italic; line-height: .95; }
